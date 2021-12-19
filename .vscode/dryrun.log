@@ -1,0 +1,5 @@
+make --dry-run --keep-going --print-directory
+make: Entering directory '/home/icirauqui/workspace_tfm/epipolar_matcher'
+make: 'main' is up to date.
+make: Leaving directory '/home/icirauqui/workspace_tfm/epipolar_matcher'
+ 
