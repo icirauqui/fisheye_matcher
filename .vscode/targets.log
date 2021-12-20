@@ -1,6 +1,4 @@
 make all --print-data-base --no-builtin-variables --no-builtin-rules --question
-make: *** No rule to make target 'all'.  Stop.
- 
 # GNU Make 4.2.1
 # Built for x86_64-pc-linux-gnu
 # Copyright (C) 1988-2016 Free Software Foundation, Inc.
@@ -8,7 +6,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sun Dec 19 15:06:51 2021
+# Make data base, printed on Mon Dec 20 21:28:34 2021
 
 # Variables
 
@@ -43,7 +41,7 @@ GDMSESSION = ubuntu
 # environment
 XMODIFIERS = @im=ibus
 # makefile
-CURDIR := /home/icirauqui/workspace_tfm/epipolar_matcher
+CURDIR := /home/icirauqui/w0rkspace/epipolar_matcher
 # makefile
 SHELL = /bin/sh
 # environment
@@ -51,7 +49,7 @@ VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupp
 # environment
 _ = /usr/share/code/code
 # environment
-JOURNAL_STREAM = 8:54933
+JOURNAL_STREAM = 8:52416
 # environment
 XDG_CONFIG_DIRS = /etc/xdg/xdg-ubuntu:/etc/xdg
 # makefile (from 'Makefile', line 1)
@@ -65,8 +63,6 @@ USERNAME = icirauqui
 # environment
 MAKELEVEL := 0
 # environment
-MANDATORY_PATH = /usr/share/gconf/ubuntu.mandatory.path
-# environment
 XDG_DATA_DIRS = /usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop
 # environment
 ROS_ETC_DIR = /opt/ros/noetic/etc/ros
@@ -75,9 +71,9 @@ DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-ROS_PACKAGE_PATH = /opt/ros/noetic/share:/home/icirauqui/workspace/ORB_SLAM2/Examples/ROS/:/home/icirauqui/workspace/ORB_SLAM2_E/Examples/ROS/:/home/icirauqui/workspace/BagFrom/Images
+ROS_PACKAGE_PATH = /opt/ros/noetic/share
 # environment
-MANAGERPID = 2676
+MANAGERPID = 1591
 # environment
 ROS_PYTHON_VERSION = 3
 # environment
@@ -89,7 +85,7 @@ VSCODE_CWD = /home/icirauqui
 # default
 MAKE_HOST := x86_64-pc-linux-gnu
 # environment
-PATH = /home/icirauqui/.local/bin:/usr/local/cuda-11.2/bin:/opt/ros/noetic/bin:/home/icirauqui/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+PATH = /home/icirauqui/.local/bin:/usr/local/cuda-11.2/bin:/usr/local/cuda-11.2/bin:/opt/ros/noetic/bin:/home/icirauqui/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 # environment
 XDG_SESSION_DESKTOP = ubuntu
 # environment
@@ -97,7 +93,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 GJS_DEBUG_OUTPUT = stderr
 # environment
-SESSION_MANAGER = local/icirauqui-Precision-7550:@/tmp/.ICE-unix/3019,unix/icirauqui-Precision-7550:/tmp/.ICE-unix/3019
+SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1849,unix/XPS15:/tmp/.ICE-unix/1849
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from 'Makefile', line 2)
@@ -109,9 +105,9 @@ XDG_MENU_PREFIX = gnome-
 # environment
 VSCODE_LOG_STACK = false
 # environment
-VSCODE_CRASH_REPORTER_START_OPTIONS = {"companyName":"Microsoft","productName":"VSCode","submitURL":"appcenter://code?aid=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=7a49b794-3cef-4569-95e9-f3f0202cb6aa&iid=7a49b794-3cef-4569-95e9-f3f0202cb6aa&sid=7a49b794-3cef-4569-95e9-f3f0202cb6aa","uploadToServer":true}
+VSCODE_CRASH_REPORTER_START_OPTIONS = {"companyName":"Microsoft","productName":"VSCode","submitURL":"appcenter://code?aid=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=7f79b37b-5392-4554-8b2f-769116d20623&iid=7f79b37b-5392-4554-8b2f-769116d20623&sid=7f79b37b-5392-4554-8b2f-769116d20623","uploadToServer":true}
 # environment
-INVOCATION_ID = 2f717253cd224bf5a054b198e7947e01
+INVOCATION_ID = ffd2ab6553af42e2a500e7ba1b6a5a17
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
@@ -123,7 +119,7 @@ ROS_DISTRO = noetic
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 59211
+GIO_LAUNCHED_DESKTOP_FILE_PID = 39825
 # automatic
 %F = $(notdir $%)
 # environment
@@ -131,11 +127,11 @@ DISPLAY = :1
 # environment
 VSCODE_PIPE_LOGGING = true
 # environment
-PWD = /home/icirauqui/workspace_tfm/epipolar_matcher
+PWD = /home/icirauqui/w0rkspace/epipolar_matcher
 # default
 .LOADED := 
 # environment
-SSH_AGENT_PID = 2985
+SSH_AGENT_PID = 1815
 # environment
 PKG_CONFIG_PATH = /opt/ros/noetic/lib/pkgconfig
 # environment
@@ -147,11 +143,11 @@ VSCODE_AMD_ENTRYPOINT = vs/workbench/services/extensions/node/extensionHostProce
 # environment
 HOME = /home/icirauqui
 # environment
-LD_LIBRARY_PATH = /usr/local/cuda-11.2/lib64:/opt/ros/noetic/lib
+LD_LIBRARY_PATH = /usr/local/cuda-11.2/lib64:/usr/local/cuda-11.2/lib64:/opt/ros/noetic/lib
 # environment
 LESSCLOSE = /usr/bin/lesspipe %s %s
 # environment
-VSCODE_CODE_CACHE_PATH = /home/icirauqui/.config/Code/CachedData/3866c3553be8b268c8a7f8c0482c0c0177aa8bfa
+VSCODE_CODE_CACHE_PATH = /home/icirauqui/.config/Code/CachedData/899d46d82c4c95423fb7e10e68eba52050e30ba3
 # environment
 LOGNAME = icirauqui
 # environment
@@ -179,7 +175,7 @@ CC = g++
 # environment
 GNOME_SHELL_SESSION_MODE = ubuntu
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-db033615-2f57-41c6-b66c-4c176c6e8d6a.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-2325db69-53ab-4691-9ddb-cbc8cf2f0177.sock
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -203,7 +199,7 @@ MAKE_COMMAND := make
 # automatic
 *F = $(notdir $*)
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-337bfe8b-1.59.1-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-337bfe8b-1.63.2-main.sock
 # environment
 PYTHONPATH = /opt/ros/noetic/lib/python3/dist-packages
 # makefile
@@ -224,14 +220,10 @@ GDK_BACKEND = x11
 LC_PAPER = es_ES.UTF-8
 # environment
 QT_ACCESSIBILITY = 1
-# environment
-DEFAULTS_PATH = /usr/share/gconf/ubuntu.default.path
 # default
 MAKEFILES := 
 # environment
 LC_NUMERIC = es_ES.UTF-8
-# environment
-VSCODE_BROWSER_CODE_LOADING = bypassHeatCheck
 # automatic
 <F = $(notdir $<)
 # environment
@@ -265,9 +257,9 @@ LC_ADDRESS = es_ES.UTF-8
 # environment
 LANG = C
 # environment
-VSCODE_PID = 59211
+VSCODE_PID = 39825
 # variable set hash-table stats:
-# Load=127/1024=12%, Rehash=0, Collisions=20/154=13%
+# Load=124/1024=12%, Rehash=0, Collisions=20/151=13%
 
 # Pattern-specific Variable Values
 
@@ -275,9 +267,9 @@ VSCODE_PID = 59211
 
 # Directories
 
-# . (device 66312, inode 18350082): 11 files, no impossibilities.
+# . (device 66311, inode 11280462): 12 files, no impossibilities.
 
-# 11 files, no impossibilities in 1 directories.
+# 12 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -295,7 +287,7 @@ all:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2021-12-19 15:02:48.495518905
+#  Last modified 2021-12-20 20:33:37.034329179
 #  File has been updated.
 #  Successfully updated.
 
@@ -304,6 +296,9 @@ main.cpp:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
+ 
+make: *** No rule to make target 'all'.  Stop.
+ 
 
 # Not a target:
 .DEFAULT:
@@ -326,12 +321,12 @@ main: main.cpp
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 16 / storage = 132 B / avg = 8 B
-# current buf: size = 8162 B / used = 132 B / count = 16 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 17 / storage = 148 B / avg = 8 B
+# current buf: size = 8162 B / used = 148 B / count = 17 / avg = 8 B
 
-# strcache performance: lookups = 23 / hit rate = 30%
+# strcache performance: lookups = 24 / hit rate = 29%
 # hash-table stats:
-# Load=16/8192=0%, Rehash=0, Collisions=1/23=4%
-# Finished Make data base on Sun Dec 19 15:06:51 2021
+# Load=17/8192=0%, Rehash=0, Collisions=1/24=4%
+# Finished Make data base on Mon Dec 20 21:28:34 2021
 
  

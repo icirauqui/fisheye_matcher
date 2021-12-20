@@ -1,10 +1,16 @@
 #include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/highgui.hpp>
 //#include "opencv2/xfeatures2d.hpp"
 //#include "opencv2/xfeatures2d/nonfree.hpp"
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
+
+//#include <opencv4/opencv2/core.hpp>
+//#include <opencv4/opencv2/highgui.hpp>
+//#include <opencv4/opencv2/features2d.hpp>
+//#include <opencv4/opencv2/calib3d.hpp>
+//#include <opencv4/opencv2/imgproc.hpp>
 
 #include <iostream>
 #include <math.h>
@@ -80,8 +86,32 @@ int main()
         cv::circle(im1o,points1[i],3,color,-1);
     }
 
-    imshow("a",im1o);
-    imshow("b",im2o);
+    //imshow("a",im1o);
+    //imshow("b",im2o);
+
+    float lx = im1o.cols;
+    float ly = im1o.rows;
+    float f = (lx/(lx+ly))*fx + (ly+(lx+ly))*fy;
+
+
+
+
+    Mat out1, out2;
+    cv::resize(im1o, out1, cv::Size(), 0.5, 0.5);
+    cv::resize(im2o, out2, cv::Size(), 0.5, 0.5);
+
+    int rows = max(out1.rows, out2.rows);
+    int cols = out1.cols + out2.cols;
+
+    Mat out0(rows, cols, out1.type());
+
+    // Copy images in correct position
+    out1.copyTo(out0(Rect(0, 0, out1.cols, out1.rows)));
+    out2.copyTo(out0(Rect(out1.cols, 0, out2.cols, out2.rows)));
+
+    imshow("c",out0);
+
+
 
 
 
@@ -90,11 +120,11 @@ int main()
 
 
     //-- Draw matches
-    Mat img_matches;
-    drawMatches( im1, kps1, im2, kps2, good_matches, img_matches, Scalar::all(-1),
-                 Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    //-- Show detected matches
-    imshow("Good Matches", img_matches );
+    //Mat img_matches;
+    //drawMatches( im1, kps1, im2, kps2, good_matches, img_matches, Scalar::all(-1),
+    //             Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    ////-- Show detected matches
+    //imshow("Good Matches", img_matches );
 
 
 
