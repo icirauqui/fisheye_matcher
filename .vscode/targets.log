@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Mon Dec 20 21:28:34 2021
+# Make data base, printed on Sat Dec 25 19:40:27 2021
 
 # Variables
 
@@ -49,7 +49,7 @@ VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupp
 # environment
 _ = /usr/share/code/code
 # environment
-JOURNAL_STREAM = 8:52416
+JOURNAL_STREAM = 8:46542
 # environment
 XDG_CONFIG_DIRS = /etc/xdg/xdg-ubuntu:/etc/xdg
 # makefile (from 'Makefile', line 1)
@@ -73,7 +73,7 @@ VSCODE_VERBOSE_LOGGING = true
 # environment
 ROS_PACKAGE_PATH = /opt/ros/noetic/share
 # environment
-MANAGERPID = 1591
+MANAGERPID = 1676
 # environment
 ROS_PYTHON_VERSION = 3
 # environment
@@ -93,7 +93,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 GJS_DEBUG_OUTPUT = stderr
 # environment
-SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1849,unix/XPS15:/tmp/.ICE-unix/1849
+SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1936,unix/XPS15:/tmp/.ICE-unix/1936
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from 'Makefile', line 2)
@@ -107,7 +107,7 @@ VSCODE_LOG_STACK = false
 # environment
 VSCODE_CRASH_REPORTER_START_OPTIONS = {"companyName":"Microsoft","productName":"VSCode","submitURL":"appcenter://code?aid=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=7f79b37b-5392-4554-8b2f-769116d20623&iid=7f79b37b-5392-4554-8b2f-769116d20623&sid=7f79b37b-5392-4554-8b2f-769116d20623","uploadToServer":true}
 # environment
-INVOCATION_ID = ffd2ab6553af42e2a500e7ba1b6a5a17
+INVOCATION_ID = 069e763218ce468d9bea258ad3161efb
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
@@ -119,7 +119,7 @@ ROS_DISTRO = noetic
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 39825
+GIO_LAUNCHED_DESKTOP_FILE_PID = 2454
 # automatic
 %F = $(notdir $%)
 # environment
@@ -131,7 +131,7 @@ PWD = /home/icirauqui/w0rkspace/epipolar_matcher
 # default
 .LOADED := 
 # environment
-SSH_AGENT_PID = 1815
+SSH_AGENT_PID = 1902
 # environment
 PKG_CONFIG_PATH = /opt/ros/noetic/lib/pkgconfig
 # environment
@@ -175,7 +175,7 @@ CC = g++
 # environment
 GNOME_SHELL_SESSION_MODE = ubuntu
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-2325db69-53ab-4691-9ddb-cbc8cf2f0177.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-350e89c4-d8dd-4db5-b566-7cb845f093c5.sock
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -257,7 +257,7 @@ LC_ADDRESS = es_ES.UTF-8
 # environment
 LANG = C
 # environment
-VSCODE_PID = 39825
+VSCODE_PID = 2454
 # variable set hash-table stats:
 # Load=124/1024=12%, Rehash=0, Collisions=20/151=13%
 
@@ -277,6 +277,9 @@ VSCODE_PID = 39825
 
 # Files
 
+ 
+make: *** No rule to make target 'all'.  Stop.
+ 
 # Not a target:
 all:
 #  Command line target.
@@ -296,9 +299,6 @@ main.cpp:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
- 
-make: *** No rule to make target 'all'.  Stop.
- 
 
 # Not a target:
 .DEFAULT:
@@ -327,6 +327,6 @@ main: main.cpp
 # strcache performance: lookups = 24 / hit rate = 29%
 # hash-table stats:
 # Load=17/8192=0%, Rehash=0, Collisions=1/24=4%
-# Finished Make data base on Mon Dec 20 21:28:34 2021
+# Finished Make data base on Sat Dec 25 19:40:27 2021
 
  
