@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sun Dec 26 14:00:56 2021
+# Make data base, printed on Sun Dec 26 19:46:50 2021
 
 # Variables
 
@@ -51,7 +51,7 @@ VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupp
 # environment
 _ = /usr/share/code/code
 # environment
-JOURNAL_STREAM = 8:49724
+JOURNAL_STREAM = 8:51403
 # environment
 XDG_CONFIG_DIRS = /etc/xdg/xdg-ubuntu:/etc/xdg
 # makefile (from 'Makefile', line 1)
@@ -75,7 +75,7 @@ VSCODE_VERBOSE_LOGGING = true
 # environment
 ROS_PACKAGE_PATH = /opt/ros/noetic/share
 # environment
-MANAGERPID = 1644
+MANAGERPID = 1639
 # environment
 ROS_PYTHON_VERSION = 3
 # environment
@@ -95,7 +95,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 GJS_DEBUG_OUTPUT = stderr
 # environment
-SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1912,unix/XPS15:/tmp/.ICE-unix/1912
+SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1903,unix/XPS15:/tmp/.ICE-unix/1903
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from 'Makefile', line 2)
@@ -109,7 +109,7 @@ VSCODE_LOG_STACK = false
 # environment
 VSCODE_CRASH_REPORTER_START_OPTIONS = {"companyName":"Microsoft","productName":"VSCode","submitURL":"appcenter://code?aid=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=7f79b37b-5392-4554-8b2f-769116d20623&iid=7f79b37b-5392-4554-8b2f-769116d20623&sid=7f79b37b-5392-4554-8b2f-769116d20623","uploadToServer":true}
 # environment
-INVOCATION_ID = 0538b940235b4ec7ae16c8de875839d3
+INVOCATION_ID = 09f6a3dafb644d1ebcf22ee41360e787
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
@@ -121,7 +121,7 @@ ROS_DISTRO = noetic
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 4676
+GIO_LAUNCHED_DESKTOP_FILE_PID = 5223
 # automatic
 %F = $(notdir $%)
 # environment
@@ -133,7 +133,7 @@ PWD = /home/icirauqui/w0rkspace/epipolar_matcher
 # default
 .LOADED := 
 # environment
-SSH_AGENT_PID = 1878
+SSH_AGENT_PID = 1869
 # environment
 PKG_CONFIG_PATH = /opt/ros/noetic/lib/pkgconfig
 # environment
@@ -177,7 +177,7 @@ CC = g++
 # environment
 GNOME_SHELL_SESSION_MODE = ubuntu
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-19932b74-8a96-4a2a-bfa7-1aa5648cb2ca.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-e4af782f-00a9-4a4e-9f56-dc7d06f4eb3a.sock
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -259,7 +259,7 @@ LC_ADDRESS = es_ES.UTF-8
 # environment
 LANG = C
 # environment
-VSCODE_PID = 4676
+VSCODE_PID = 5223
 # variable set hash-table stats:
 # Load=124/1024=12%, Rehash=0, Collisions=20/151=13%
 
@@ -269,9 +269,9 @@ VSCODE_PID = 4676
 
 # Directories
 
-# . (device 66311, inode 11280462): 12 files, no impossibilities.
+# . (device 66311, inode 11280462): 14 files, no impossibilities.
 
-# 12 files, no impossibilities in 1 directories.
+# 14 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -279,13 +279,13 @@ VSCODE_PID = 4676
 
 # Files
 
- 
 # Not a target:
 all:
 #  Command line target.
 #  Implicit rule search has been done.
 #  File does not exist.
 #  File has not been updated.
+ 
 
 # Not a target:
 Makefile:
@@ -321,12 +321,12 @@ main: main.cpp
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 17 / storage = 148 B / avg = 8 B
-# current buf: size = 8162 B / used = 148 B / count = 17 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 19 / storage = 182 B / avg = 9 B
+# current buf: size = 8162 B / used = 182 B / count = 19 / avg = 9 B
 
-# strcache performance: lookups = 24 / hit rate = 29%
+# strcache performance: lookups = 26 / hit rate = 26%
 # hash-table stats:
-# Load=17/8192=0%, Rehash=0, Collisions=1/24=4%
-# Finished Make data base on Sun Dec 26 14:00:56 2021
+# Load=19/8192=0%, Rehash=0, Collisions=1/26=4%
+# Finished Make data base on Sun Dec 26 19:46:50 2021
 
  
