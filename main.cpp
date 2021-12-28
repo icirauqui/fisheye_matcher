@@ -210,25 +210,45 @@ int main(){
       kpoints2.push_back(kps2[i].pt);
 
     std::vector<cv::Vec3f> gmlines1, gmlines2;
-    cv::computeCorrespondEpilines(kpoints1, 1, F12, gmlines1);
-    cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
+    //cv::computeCorrespondEpilines(kpoints1, 1, F12, gmlines1);
+    //cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
+    cv::computeCorrespondEpilines(points1, 1, F12, gmlines1);
+    cv::computeCorrespondEpilines(points2, 2, F12, gmlines2);
 
-    drawEpipolarLines("epip2",F12,im1,im2,kpoints1,gmlines1,kpoints2);
+    //drawEpipolarLines("epip2",F12,im1,im2,kpoints1,gmlines1,kpoints2);
+    drawEpipolarLines("epip2",F12,im1,im2,points1,gmlines1,points2);
 
-    cv::Point3f co2(cx,cy,f);
+    cv::Vec3f c2v(cx,cy,f);
+    cv::Point3f c2(cx,cy,f);
 
     std::vector<cv::Point2f> gmpoints1, gmpoints2;
     std::vector< std::vector<cv::DMatch> > gm_matches;
     for (size_t i=0; i<gmlines1.size(); i++){
       cv::Point3f pt0(0,-gmlines1[i][2]/gmlines1[i][1],0.);
       cv::Point3f pt1(im1.cols,-(gmlines1[i][2]+gmlines1[i][0]*im1.cols)/gmlines1[i][1],0.);
-      cv::Vec4f pi = equation_plane(pt0, pt1, co2);
+      cv::Vec4f pi = equation_plane(pt0, pt1, c2);
 
-      for (size_t j=0; j<kpoints2.size(); j++){
-        cv::Point3f kp(kpoints[j].x, kpoints2[j].y, 0.);
+      //for (size_t j=0; j<kpoints2.size(); j++){
+      for (size_t j=0; j<points2.size(); j++){
+        //cv::Vec3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
+        cv::Vec3f kp(points2[j].x, points2[j].y, 0.);
+
+        //Vector director de la recta
+        cv::Vec3f v(kp(0)-c2v(0), kp(1)-c2v(1), kp(2)-c2v(2));
         
-      }
+        //Vector normal del plano
+        cv::Vec3f n(pi(1), pi(2), pi(3));
 
+        float num = abs(v(0)*n(0) + v(1)*n(1) + v(2)*n(2));
+        float den1 = sqrt(v(0)*v(0) + v(1)*v(1) + v(2)*v(2));
+        float den2 = sqrt(n(0)*n(0) + n(1)*n(1) + n(2)*n(2));
+        
+        float alpha = asin(num / (den1 * den2));
+
+        std::cout << alpha << " ";
+
+      }
+      std::cout << std::endl;
     }
 
 
