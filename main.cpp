@@ -3,6 +3,10 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+//Visualization
+#include <opencv2/viz.hpp>
+
+
 #include <iostream>
 
 // Function to find equation of plane.
@@ -17,6 +21,8 @@ cv::Vec4f equation_plane(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3){
     float b = a2 * c1 - a1 * c2;
     float c = a1 * b2 - b1 * a2;
     float d = (- a * p1.x - b * p1.y - c * p1.z);
+
+    std::cout << "Equation plane = " << a << " x " << b << " y " << c << " z " << d << std::endl;
 
     cv::Vec4f piVec(a,b,c,d);
     
@@ -221,12 +227,25 @@ int main(){
     cv::Vec3f c2v(cx,cy,f);
     cv::Point3f c2(cx,cy,f);
 
+    cv::viz::Viz3d myWindow("Coordinate Frame");
+    myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(100));
+    std::vector<cv::Point3f> pts3d1;
+
     std::vector<cv::Point2f> gmpoints1, gmpoints2;
     std::vector< std::vector<cv::DMatch> > gm_matches;
     for (size_t i=0; i<gmlines1.size(); i++){
+      if (i>5) break;
       cv::Point3f pt0(0,-gmlines1[i][2]/gmlines1[i][1],0.);
       cv::Point3f pt1(im1.cols,-(gmlines1[i][2]+gmlines1[i][0]*im1.cols)/gmlines1[i][1],0.);
       cv::Vec4f pi = equation_plane(pt0, pt1, c2);
+
+      pts3d1.push_back(cv::Point3f(0,-gmlines1[i][2]/gmlines1[i][1],0.));
+      pts3d1.push_back(cv::Point3f(im1.cols,-(gmlines1[i][2]+gmlines1[i][0]*im1.cols)/gmlines1[i][1],0.));
+      pts3d1.push_back(cv::Point3f(cx,cy,f));
+      cv::viz::WCloud cloud_widget1(pts3d1, cv::viz::Color::green());
+      //myWindow.showWidget("cloud 1", cloud_widget1);
+      myWindow.spin();
+      cv::waitKey(0);
 
       //for (size_t j=0; j<kpoints2.size(); j++){
       for (size_t j=0; j<points2.size(); j++){
@@ -250,6 +269,7 @@ int main(){
       }
       std::cout << std::endl;
     }
+
 
 
 
