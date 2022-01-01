@@ -6,8 +6,74 @@
 //Visualization
 #include <opencv2/viz.hpp>
 
+#include <math.h>
 
 #include <iostream>
+
+float rad_to_deg(float rad){
+    return rad*180.0/M_PI;
+}
+
+float deg_to_rad(float deg){
+    return deg*M_PI/180.0;
+}
+
+
+cv::Vec3f equation_line(cv::Point2f p1, cv::Point2f p2){
+    float dx = p2.x - p1.x;
+    float dy = p2.y - p1.y;
+    float m = dy / dx;
+    float c = p1.y - m*p1.x;
+
+    cv::Vec3f eqLine(m,-1,c);
+    std::cout << "eqLine = " << eqLine << std::endl;
+    return eqLine;
+}
+
+
+float line_y_x(cv::Vec3f line, float x){
+    return (line(0)*x + line(2))/(-line(1));
+}
+
+float line_x_y(cv::Vec3f line, float y){
+    return (line(1)*y + line(2))/(-line(0));
+}
+
+std::vector<cv::Point3f> frustum_line(cv::Vec3f line, float lx, float ly){
+    float x0, y0, z0, x1, y1, z1;
+
+    x0 = 0;
+    y0 = line_y_x(line,x0);
+    z0 = 0;
+    if (y0 < 0){
+        y0 = 0;
+        x0 = line_x_y(line,y0);
+    }
+    else if (y0 > ly){
+        y0 = ly;
+        x0 = line_x_y(line,y0);
+    }
+    cv::Point3f pt0(x0,y0,z0);
+
+    x1 = lx;
+    y1 = line_y_x(line,x1);
+    z1 = 0;
+    std::cout << x1 << " " << y1 << " " << z1 << std::endl;
+    if (y1 < 0){
+        y1 =ly;
+        x1 = line_x_y(line,y1);
+    }
+    else if (y1 > ly){
+        y1 = ly;
+        x1 = line_x_y(line,y1);
+    }
+    cv::Point3f pt1(x1,y1,z1);
+
+    std::vector<cv::Point3f> frustum = {pt0,pt1};
+    
+    return frustum;
+    
+}
 
 // Function to find equation of plane.
 cv::Vec4f equation_plane(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3){
@@ -22,11 +88,25 @@ cv::Vec4f equation_plane(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3){
     float c = a1 * b2 - b1 * a2;
     float d = (- a * p1.x - b * p1.y - c * p1.z);
 
-    std::cout << "Equation plane = " << a << " x " << b << " y " << c << " z " << d << std::endl;
+    //std::cout << "Equation plane = " << a << " x " << b << " y " << c << " z " << d << std::endl;
 
     cv::Vec4f piVec(a,b,c,d);
     
     return piVec;
+}
+
+float angle_line_plane(cv::Vec4f pi, cv::Vec3f v){        
+    //Vector normal del plano
+    cv::Vec3f n(pi(0), pi(1), pi(2));
+
+    float num = abs(v(0)*n(0) + v(1)*n(1) + v(2)*n(2));
+    float den1 = sqrt(v(0)*v(0) + v(1)*v(1) + v(2)*v(2));
+    float den2 = sqrt(n(0)*n(0) + n(1)*n(1) + n(2)*n(2));
+    
+    float beta = acos(num / (den1 * den2));
+    float alpha = (M_PI/2) - beta;
+
+    return alpha;
 }
 
 void resize_and_display(const std::string& title, const cv::Mat& img1, float factor){
@@ -38,9 +118,8 @@ void resize_and_display(const std::string& title, const cv::Mat& img1, float fac
  
 static float distancePointLine(const cv::Point2f point, const cv::Vec3f& line)
 {
-  //Line is given as a*x + b*y + c = 0
-  return std::fabs(line(0)*point.x + line(1)*point.y + line(2))
-      / std::sqrt(line(0)*line(0)+line(1)*line(1));
+    //Line is given as a*x + b*y + c = 0
+    return std::fabs(line(0)*point.x + line(1)*point.y + line(2)) / std::sqrt(line(0)*line(0)+line(1)*line(1));
 }
 
 static void drawEpipolarLines(const std::string& title, const cv::Mat F,
@@ -151,6 +230,9 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
 
 int main(){
 
+    bool bDraw = false;
+    float th_alpha = 0.0698132; //4 deg
+
     float fx = 717.2104;
     float fy = 717.4816;
     float cx = 735.3566;
@@ -168,7 +250,7 @@ int main(){
     
     float lx = im1.cols;
     float ly = im1.rows;
-    float f = (lx/(lx+ly))*fx + (ly+(lx+ly))*fy;
+    float f = (lx/(lx+ly))*fx + (ly/(lx+ly))*fy;
 
 
     // Detect and compute features
@@ -202,8 +284,7 @@ int main(){
     // Epipolar matching
     // Compute F and epilines
     cv::Mat F12 = cv::findFundamentalMat(points1,points2);
-
-    drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
+    //drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
 
 
 
@@ -211,69 +292,208 @@ int main(){
 
     std::vector<cv::Point2f> kpoints1, kpoints2;
     for (size_t i=0; i<kps1.size(); i++)
-      kpoints1.push_back(kps1[i].pt);
+        kpoints1.push_back(kps1[i].pt);
     for (size_t i=0; i<kps2.size(); i++)
-      kpoints2.push_back(kps2[i].pt);
+        kpoints2.push_back(kps2[i].pt);
 
     std::vector<cv::Vec3f> gmlines1, gmlines2;
-    //cv::computeCorrespondEpilines(kpoints1, 1, F12, gmlines1);
-    //cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
-    cv::computeCorrespondEpilines(points1, 1, F12, gmlines1);
-    cv::computeCorrespondEpilines(points2, 2, F12, gmlines2);
-
+    cv::computeCorrespondEpilines(kpoints1, 1, F12, gmlines1);
+    cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
     //drawEpipolarLines("epip2",F12,im1,im2,kpoints1,gmlines1,kpoints2);
-    drawEpipolarLines("epip2",F12,im1,im2,points1,gmlines1,points2);
+
+    //cv::computeCorrespondEpilines(points1, 1, F12, gmlines1);
+    //cv::computeCorrespondEpilines(points2, 2, F12, gmlines2);
+    //drawEpipolarLines("epip2",F12,im1,im2,points1,gmlines1,points2);
 
     cv::Vec3f c2v(cx,cy,f);
     cv::Point3f c2(cx,cy,f);
 
+
     cv::viz::Viz3d myWindow("Coordinate Frame");
-    myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(100));
-    std::vector<cv::Point3f> pts3d1;
+    if (bDraw) {
+        // Coordinate system
+        myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(200));
+
+        // Camera frame
+        cv::Point3f fr00(0.,ly,0.);
+        cv::Point3f fr01(lx,ly,0.);
+        cv::Point3f fr10(0.,0.,0.);
+        cv::Point3f fr11(lx,0.,0.);
+        cv::viz::WLine wfr00(fr00,fr01,cv::viz::Color::gray());
+        cv::viz::WLine wfr01(fr01,fr11,cv::viz::Color::gray());
+        cv::viz::WLine wfr10(fr11,fr10,cv::viz::Color::gray());
+        cv::viz::WLine wfr11(fr10,fr00,cv::viz::Color::gray());
+        myWindow.showWidget("frame00", wfr00);
+        myWindow.showWidget("frame01", wfr01);
+        myWindow.showWidget("frame10", wfr10);
+        myWindow.showWidget("frame11", wfr11);
+    }
 
     std::vector<cv::Point2f> gmpoints1, gmpoints2;
     std::vector< std::vector<cv::DMatch> > gm_matches;
-    for (size_t i=0; i<gmlines1.size(); i++){
-      if (i>5) break;
-      cv::Point3f pt0(0,-gmlines1[i][2]/gmlines1[i][1],0.);
-      cv::Point3f pt1(im1.cols,-(gmlines1[i][2]+gmlines1[i][0]*im1.cols)/gmlines1[i][1],0.);
-      cv::Vec4f pi = equation_plane(pt0, pt1, c2);
+    std::vector<std::vector<int> > match_candidates;
 
-      pts3d1.push_back(cv::Point3f(0,-gmlines1[i][2]/gmlines1[i][1],0.));
-      pts3d1.push_back(cv::Point3f(im1.cols,-(gmlines1[i][2]+gmlines1[i][0]*im1.cols)/gmlines1[i][1],0.));
-      pts3d1.push_back(cv::Point3f(cx,cy,f));
-      cv::viz::WCloud cloud_widget1(pts3d1, cv::viz::Color::green());
-      //myWindow.showWidget("cloud 1", cloud_widget1);
-      myWindow.spin();
-      cv::waitKey(0);
+    for (size_t i=0; i<kps1.size(); i++){
+        cv::Point3f pt0(0,-gmlines1[i][2]/gmlines1[i][1],0.);
+        cv::Point3f pt1(im1.cols,-(gmlines1[i][2]+gmlines1[i][0]*im1.cols)/gmlines1[i][1],0.);
+        cv::Vec4f pi = equation_plane(pt0, pt1, c2);
 
-      //for (size_t j=0; j<kpoints2.size(); j++){
-      for (size_t j=0; j<points2.size(); j++){
-        //cv::Vec3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
-        cv::Vec3f kp(points2[j].x, points2[j].y, 0.);
+        if (bDraw){
+            cv::Vec3f line = equation_line(cv::Point2f(pt0.x,pt0.y), cv::Point2f(pt1.x,pt1.y));
+            std::vector<cv::Point3f> pts3d2 = frustum_line(line,lx,ly);
+            cv::viz::WCloud cloud_widget2(pts3d2, cv::viz::Color::green());
+            cv::viz::WLine epiline(pts3d2[0],pts3d2[1],cv::viz::Color::green());
+            myWindow.showWidget("epiLine", epiline);
 
-        //Vector director de la recta
-        cv::Vec3f v(kp(0)-c2v(0), kp(1)-c2v(1), kp(2)-c2v(2));
-        
-        //Vector normal del plano
-        cv::Vec3f n(pi(1), pi(2), pi(3));
+            pts3d2.push_back(c2);
+            pts3d2.push_back(pts3d2[0]);
+            cv::viz::WPolyLine vizPi(pts3d2,cv::viz::Color::green());
+            myWindow.showWidget("vizPi", vizPi);
 
-        float num = abs(v(0)*n(0) + v(1)*n(1) + v(2)*n(2));
-        float den1 = sqrt(v(0)*v(0) + v(1)*v(1) + v(2)*v(2));
-        float den2 = sqrt(n(0)*n(0) + n(1)*n(1) + n(2)*n(2));
-        
-        float alpha = asin(num / (den1 * den2));
+            myWindow.spinOnce();
+        }
 
-        std::cout << alpha << " ";
+        std::vector<int> match_candidates_i;
 
-      }
-      std::cout << std::endl;
+        for (size_t j=0; j<kpoints2.size(); j++){
+        //for (size_t j=0; j<points2.size(); j++){
+            cv::Vec3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
+            //cv::Vec3f kp(points2[j].x, points2[j].y, 0.);
+
+            // Director vector of line
+            cv::Vec3f v(kp(0)-c2v(0), kp(1)-c2v(1), kp(2)-c2v(2));
+            
+            float alpha = angle_line_plane(pi,v);
+
+
+            if (alpha <= th_alpha){
+                match_candidates_i.push_back(j);
+            }
+
+            if (bDraw) {
+                std::cout << "Angle " << alpha << " rad, " << rad_to_deg(alpha) << " deg" << std::endl;
+                cv::viz::WLine ptLine(c2, cv::Point3f(kp(0),kp(1),kp(2)), cv::viz::Color::red());
+                myWindow.showWidget("ptLine"+j, ptLine);
+                myWindow.spinOnce();
+            }
+        }
+
+        match_candidates.push_back(match_candidates_i);
+
+        if (bDraw){
+            myWindow.spin();
+        }
+      
+
     }
 
 
 
+    cv::Ptr<cv::DescriptorMatcher> matcher_1 = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+    std::vector< std::vector<cv::DMatch> > knn_matches_1;
+
+    std::cout << desc1.size() << "  " << match_candidates.size() << std::endl;
+    std::cout << desc1.rows << "  " << desc1.cols << std::endl;
+    //matcher_1->knnMatch( desc1, desc2, knn_matches_1, 2, match_candidates);
+
+    std::vector<std::vector<double> > distances;
+    for (size_t i=0; i<match_candidates.size(); i++){
+        std::vector<double> distances_i;
+        for (size_t j=0; j<match_candidates[i].size(); j++){
+            double dist_l2  = norm(desc1.row(i),desc2.row(match_candidates[i][j]),cv::NORM_L2);
+            distances_i.push_back(dist_l2);
+        }
+        distances.push_back(distances_i);
+    }
+
+    // For each kp2 to which kp1s has been marked as candidate
+    std::vector<std::vector<int> > inv_index;
+    std::vector<std::vector<double> > inv_distances;
+    for (size_t i=0; i<kps2.size(); i++){
+        std::vector<int> inv_index_i;
+        std::vector<double> inv_distances_i;
+        for (size_t j=0; j<match_candidates.size(); j++){
+            for (size_t k=0; k<match_candidates[j].size(); k++){
+                if (match_candidates[j][k]==i){
+                    inv_index_i.push_back(j);
+                    inv_distances_i.push_back(distances[j][k]);
+                }
+            }
+        }
+        inv_index.push_back(inv_index_i);
+        inv_distances.push_back(inv_distances_i);
+    }
 
 
+    std::vector<cv::DMatch> egmatches;
+    for (size_t i=0; i<inv_distances.size(); i++){
+        double score = -1.0;
+        int id_1 = -1;
+        int id_2 = -1;
+        if (inv_distances[i].size() > 0){
+            for (size_t j=0; j<inv_distances[i].size(); j++){
+                if (inv_distances[i][j] > score && inv_distances[i][j] > -1.0){
+                    score = inv_distances[i][j];
+                    id_1 = inv_index[i][j];
+                    id_2 = j;
+                }
+            }
+        }
+        if (id_1 > -1){
+            for (size_t j=0; j<inv_index.size(); j++){
+                for (size_t k=0; k<inv_index[j].size(); k++){
+                    if (inv_index[j][k]==id_1){
+                        inv_index[j][k] = -1;
+                        inv_distances[j][k] = -1.0;
+                    }
+                }
+            }
+
+            cv::DMatch dm;
+            dm.queryIdx = id_1;
+            dm.trainIdx = id_2;
+            dm.imgIdx = 0;
+            for (size_t j=0; j<match_candidates[id_1].size(); j++){
+                if (match_candidates[id_1][j] == id_2){
+                    dm.distance = (float) distances[id_1][j];
+                    break;
+                }
+            }
+            egmatches.push_back(dm);
+        }
+
+
+    }
+
+    std::cout << "kps2 = " << kps2.size() << std::endl;
+    std::cout << "matches = " << egmatches.size() << std::endl;
+
+    std::vector<cv::DMatch> egmatches1;
+    double th = 400.0;
+    for (size_t i=0; i<egmatches.size(); i++){
+        if (egmatches[i].distance <= th){
+            egmatches1.push_back(egmatches[i]);
+        }
+    }
+
+    std::cout << "matches1 = " << egmatches1.size() << std::endl;
+
+
+    cv::Mat imout;
+    cv::drawMatches(im1,kps1,im2,kps2,egmatches1,imout);
+    resize_and_display("eg",imout,0.5);
+
+/*
+    for (size_t i=0; i<inv_index.size(); i++){
+        if (inv_index[i].size() > 0){
+            std::cout << i << "( ";
+            for (size_t j=0; j<inv_index[i].size(); j++){
+                std::cout << inv_index[i][j] << " ";
+            }
+            std::cout << " )" << std::endl;
+        }
+    }
+*/
 
     cv::waitKey(0);
     return 0;
