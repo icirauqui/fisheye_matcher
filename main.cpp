@@ -18,7 +18,6 @@ float deg_to_rad(float deg){
     return deg*M_PI/180.0;
 }
 
-
 cv::Vec3f equation_line(cv::Point2f p1, cv::Point2f p2){
     float dx = p2.x - p1.x;
     float dy = p2.y - p1.y;
@@ -26,10 +25,8 @@ cv::Vec3f equation_line(cv::Point2f p1, cv::Point2f p2){
     float c = p1.y - m*p1.x;
 
     cv::Vec3f eqLine(m,-1,c);
-    std::cout << "eqLine = " << eqLine << std::endl;
     return eqLine;
 }
-
 
 float line_y_x(cv::Vec3f line, float x){
     return (line(0)*x + line(2))/(-line(1));
@@ -40,42 +37,24 @@ float line_x_y(cv::Vec3f line, float y){
 }
 
 std::vector<cv::Point3f> frustum_line(cv::Vec3f line, float lx, float ly){
-    float x0, y0, z0, x1, y1, z1;
+    cv::Point3f pt0(0., line_y_x(line,0.), 0.);
+    if (pt0.y < 0)
+        pt0.y = 0;
+    else if (pt0.y > ly)
+        pt0.y = ly;
+    pt0.x = line_x_y(line,pt0.y);
 
-    x0 = 0;
-    y0 = line_y_x(line,x0);
-    z0 = 0;
-    if (y0 < 0){
-        y0 = 0;
-        x0 = line_x_y(line,y0);
-    }
-    else if (y0 > ly){
-        y0 = ly;
-        x0 = line_x_y(line,y0);
-    }
-    cv::Point3f pt0(x0,y0,z0);
-
-    x1 = lx;
-    y1 = line_y_x(line,x1);
-    z1 = 0;
-    std::cout << x1 << " " << y1 << " " << z1 << std::endl;
-    if (y1 < 0){
-        y1 =ly;
-        x1 = line_x_y(line,y1);
-    }
-    else if (y1 > ly){
-        y1 = ly;
-        x1 = line_x_y(line,y1);
-    }
-    cv::Point3f pt1(x1,y1,z1);
+    cv::Point3f pt1(lx, line_y_x(line,lx), 0.);
+    if (pt1.y < 0)
+        pt1.y = 0;
+    else if (pt1.y > ly)
+        pt1.y = ly;
+    pt1.x = line_x_y(line,pt1.y);
 
     std::vector<cv::Point3f> frustum = {pt0,pt1};
-    
     return frustum;
-    
 }
 
-// Function to find equation of plane.
 cv::Vec4f equation_plane(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3){
     float a1 = p2.x - p1.x;
     float b1 = p2.y - p1.y;
@@ -88,10 +67,7 @@ cv::Vec4f equation_plane(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3){
     float c = a1 * b2 - b1 * a2;
     float d = (- a * p1.x - b * p1.y - c * p1.z);
 
-    //std::cout << "Equation plane = " << a << " x " << b << " y " << c << " z " << d << std::endl;
-
     cv::Vec4f piVec(a,b,c,d);
-    
     return piVec;
 }
 
@@ -105,27 +81,22 @@ float angle_line_plane(cv::Vec4f pi, cv::Vec3f v){
     
     float beta = acos(num / (den1 * den2));
     float alpha = (M_PI/2) - beta;
-
     return alpha;
 }
 
 void resize_and_display(const std::string& title, const cv::Mat& img1, float factor){
     cv::Mat out1;
     cv::resize(img1, out1, cv::Size(), factor, factor);
-
     cv::imshow(title,out1);
 }
  
-static float distancePointLine(const cv::Point2f point, const cv::Vec3f& line)
-{
-    //Line is given as a*x + b*y + c = 0
+static float distancePointLine(const cv::Point2f point, const cv::Vec3f& line){
     return std::fabs(line(0)*point.x + line(1)*point.y + line(2)) / std::sqrt(line(0)*line(0)+line(1)*line(1));
 }
 
 static void drawEpipolarLines(const std::string& title, const cv::Mat F,
                 const cv::Mat& img1, const cv::Mat& img2,
-                const std::vector<cv::Point2f> points1,
-                const std::vector<cv::Point2f> points2,
+                const std::vector<cv::Point2f> points1, const std::vector<cv::Point2f> points2,
                 const float inlierDistance = -1) {
   CV_Assert(img1.size() == img2.size() && img1.type() == img2.type());
   cv::Mat outImg(img1.rows, img1.cols*2, CV_8UC3);
@@ -147,7 +118,6 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
  
   CV_Assert(points1.size() == points2.size() && points2.size() == epilines1.size() && epilines1.size() == epilines2.size());
  
-  cv::RNG rng(0);
   for(size_t i=0; i<points1.size(); i++) {
     if(inlierDistance > 0) {
       if(distancePointLine(points1[i], epilines2[i]) > inlierDistance ||
@@ -159,7 +129,7 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
     /*
      * Epipolar lines of the 1st point set are drawn in the 2nd image and vice-versa
      */
-    cv::Scalar color(rng(256),rng(256),rng(256));
+    cv::Scalar color(cv::RNG(256),cv::RNG(256),cv::RNG(256));
  
     cv::line(outImg(rect2),
       cv::Point(0,-epilines1[i][2]/epilines1[i][1]),
@@ -184,54 +154,44 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
                 const std::vector<cv::Vec3f> epilines1,
                 const std::vector<cv::Point2f> points2,
                 const float inlierDistance = -1) {
-  CV_Assert(img1.size() == img2.size() && img1.type() == img2.type());
-  cv::Mat outImg(img1.rows, img1.cols*2, CV_8UC3);
-  cv::Rect rect1(0,0, img1.cols, img1.rows);
-  cv::Rect rect2(img1.cols, 0, img1.cols, img1.rows);
+    CV_Assert(img1.size() == img2.size() && img1.type() == img2.type());
+    cv::Mat outImg(img1.rows, img1.cols*2, CV_8UC3);
+    cv::Rect rect1(0,0, img1.cols, img1.rows);
+    cv::Rect rect2(img1.cols, 0, img1.cols, img1.rows);
 
-  if (img1.type() == CV_8U){
-    cv::cvtColor(img1, outImg(rect1), cv::COLOR_GRAY2BGR);
-    cv::cvtColor(img2, outImg(rect2), cv::COLOR_GRAY2BGR);
-  }
-  else{
-    img1.copyTo(outImg(rect1));
-    img2.copyTo(outImg(rect2));
-  }
- 
-  //CV_Assert(points1.size() == points2.size() && points2.size() == epilines1.size() && epilines1.size() == epilines2.size());
- 
-  cv::RNG rng(0);
+    if (img1.type() == CV_8U){
+        cv::cvtColor(img1, outImg(rect1), cv::COLOR_GRAY2BGR);
+        cv::cvtColor(img2, outImg(rect2), cv::COLOR_GRAY2BGR);
+    }
+    else{
+        img1.copyTo(outImg(rect1));
+        img2.copyTo(outImg(rect2));
+    }
 
-  for (size_t i=0; i<points2.size(); i++){
-    cv::circle(outImg(rect2), points2[i], 3, cv::Scalar(50,50,50), -1, cv::LINE_AA);
-  }
+    for (size_t i=0; i<points2.size(); i++){
+        cv::circle(outImg(rect2), points2[i], 3, cv::Scalar(50,50,50), -1, cv::LINE_AA);
+    }
 
-  for(size_t i=0; i<points1.size(); i++) {
-    cv::Scalar color(rng(256),rng(256),rng(256));
- 
-    cv::line(outImg(rect2),
-      cv::Point(0,-epilines1[i][2]/epilines1[i][1]),
-      cv::Point(img1.cols,-(epilines1[i][2]+epilines1[i][0]*img1.cols)/epilines1[i][1]),
-      color);
-    cv::circle(outImg(rect1), points1[i], 3, color, -1, cv::LINE_AA);
-  }
+    for(size_t i=0; i<points1.size(); i++) {
+        cv::Scalar color(cv::RNG(256),cv::RNG(256),cv::RNG(256));
+    
+        cv::line(outImg(rect2),
+        cv::Point(0,-epilines1[i][2]/epilines1[i][1]),
+        cv::Point(img1.cols,-(epilines1[i][2]+epilines1[i][0]*img1.cols)/epilines1[i][1]),
+        color);
+        cv::circle(outImg(rect1), points1[i], 3, color, -1, cv::LINE_AA);
+    }
 
-  resize_and_display(title, outImg, 0.5);
-  cv::waitKey(1);
+    resize_and_display(title, outImg, 0.5);
+    cv::waitKey(1);
 }
 
-
-
-
-
-
-
-
-
 int main(){
-
-    bool bDraw = false;
-    float th_alpha = 0.0698132; //4 deg
+    bool bDraw = true;
+    float th_alpha = 0.0174533; //1 deg
+    //float th_alpha = 0.0349066; //2 deg
+    //float th_alpha = 0.0523599; //3 deg
+    //float th_alpha = 0.0698132; //4 deg
 
     float fx = 717.2104;
     float fy = 717.4816;
@@ -251,6 +211,7 @@ int main(){
     float lx = im1.cols;
     float ly = im1.rows;
     float f = (lx/(lx+ly))*fx + (ly/(lx+ly))*fy;
+    cv::Point3f c2(cx,cy,f);
 
 
     // Detect and compute features
@@ -281,14 +242,9 @@ int main(){
     }
 
 
-    // Epipolar matching
-    // Compute F and epilines
+    // Epipolar matching, compute F and epilines
     cv::Mat F12 = cv::findFundamentalMat(points1,points2);
     //drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
-
-
-
-
 
     std::vector<cv::Point2f> kpoints1, kpoints2;
     for (size_t i=0; i<kps1.size(); i++)
@@ -301,86 +257,50 @@ int main(){
     cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
     //drawEpipolarLines("epip2",F12,im1,im2,kpoints1,gmlines1,kpoints2);
 
-    //cv::computeCorrespondEpilines(points1, 1, F12, gmlines1);
-    //cv::computeCorrespondEpilines(points2, 2, F12, gmlines2);
-    //drawEpipolarLines("epip2",F12,im1,im2,points1,gmlines1,points2);
-
-    cv::Vec3f c2v(cx,cy,f);
-    cv::Point3f c2(cx,cy,f);
-
-
-    cv::viz::Viz3d myWindow("Coordinate Frame");
-    if (bDraw) {
-        // Coordinate system
-        myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(200));
-
-        // Camera frame
-        cv::Point3f fr00(0.,ly,0.);
-        cv::Point3f fr01(lx,ly,0.);
-        cv::Point3f fr10(0.,0.,0.);
-        cv::Point3f fr11(lx,0.,0.);
-        cv::viz::WLine wfr00(fr00,fr01,cv::viz::Color::gray());
-        cv::viz::WLine wfr01(fr01,fr11,cv::viz::Color::gray());
-        cv::viz::WLine wfr10(fr11,fr10,cv::viz::Color::gray());
-        cv::viz::WLine wfr11(fr10,fr00,cv::viz::Color::gray());
-        myWindow.showWidget("frame00", wfr00);
-        myWindow.showWidget("frame01", wfr01);
-        myWindow.showWidget("frame10", wfr10);
-        myWindow.showWidget("frame11", wfr11);
-    }
-
-    std::vector<cv::Point2f> gmpoints1, gmpoints2;
-    std::vector< std::vector<cv::DMatch> > gm_matches;
     std::vector<std::vector<int> > match_candidates;
-
     for (size_t i=0; i<kps1.size(); i++){
         cv::Point3f pt0(0,-gmlines1[i][2]/gmlines1[i][1],0.);
         cv::Point3f pt1(im1.cols,-(gmlines1[i][2]+gmlines1[i][0]*im1.cols)/gmlines1[i][1],0.);
         cv::Vec4f pi = equation_plane(pt0, pt1, c2);
 
-        if (bDraw){
-            cv::Vec3f line = equation_line(cv::Point2f(pt0.x,pt0.y), cv::Point2f(pt1.x,pt1.y));
-            std::vector<cv::Point3f> pts3d2 = frustum_line(line,lx,ly);
-            cv::viz::WCloud cloud_widget2(pts3d2, cv::viz::Color::green());
-            cv::viz::WLine epiline(pts3d2[0],pts3d2[1],cv::viz::Color::green());
-            myWindow.showWidget("epiLine", epiline);
-
-            pts3d2.push_back(c2);
-            pts3d2.push_back(pts3d2[0]);
-            cv::viz::WPolyLine vizPi(pts3d2,cv::viz::Color::green());
-            myWindow.showWidget("vizPi", vizPi);
-
-            myWindow.spinOnce();
-        }
-
         std::vector<int> match_candidates_i;
-
         for (size_t j=0; j<kpoints2.size(); j++){
-        //for (size_t j=0; j<points2.size(); j++){
             cv::Vec3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
-            //cv::Vec3f kp(points2[j].x, points2[j].y, 0.);
+            cv::Vec3f v(kp(0)-c2.x, kp(1)-c2.y, kp(2)-c2.z);
 
-            // Director vector of line
-            cv::Vec3f v(kp(0)-c2v(0), kp(1)-c2v(1), kp(2)-c2v(2));
-            
-            float alpha = angle_line_plane(pi,v);
-
-
-            if (alpha <= th_alpha){
+            if (angle_line_plane(pi,v) <= th_alpha){
                 match_candidates_i.push_back(j);
-            }
-
-            if (bDraw) {
-                std::cout << "Angle " << alpha << " rad, " << rad_to_deg(alpha) << " deg" << std::endl;
-                cv::viz::WLine ptLine(c2, cv::Point3f(kp(0),kp(1),kp(2)), cv::viz::Color::red());
-                myWindow.showWidget("ptLine"+j, ptLine);
-                myWindow.spinOnce();
             }
         }
 
         match_candidates.push_back(match_candidates_i);
 
         if (bDraw){
+            cv::viz::Viz3d myWindow("Coordinate Frame");
+
+            // Coordinate system
+            myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(200));
+
+            // Camera frame
+            std::vector<cv::Point3f> camFr = {cv::Point3f(0.,ly,0.), cv::Point3f(lx,ly,0.), cv::Point3f(lx,0.,0.), cv::Point3f(0.,0.,0.), cv::Point3f(0.,ly,0.)};
+            cv::viz::WPolyLine camFrPoly(camFr,cv::viz::Color::gray());
+            myWindow.showWidget("camFrPoly", camFrPoly);
+
+            // Epiplane
+            cv::Vec3f line = equation_line(cv::Point2f(pt0.x,pt0.y), cv::Point2f(pt1.x,pt1.y));
+            std::vector<cv::Point3f> lineFr = frustum_line(line,lx,ly);
+            lineFr.push_back(c2);
+            lineFr.push_back(lineFr[0]);
+            cv::viz::WPolyLine epiplane(lineFr,cv::viz::Color::green());
+            myWindow.showWidget("epiplane", epiplane);
+
+            // Candidate points projective rays
+            for (size_t j=0; j<match_candidates_i.size(); j++){
+                cv::Point3f kp(kpoints2[match_candidates_i[j]].x, kpoints2[match_candidates_i[j]].y, 0.);
+                cv::viz::WLine ptLine(c2, kp, cv::viz::Color::red());
+                myWindow.showWidget("ptLine"+j, ptLine);
+            }
+
             myWindow.spin();
         }
       
