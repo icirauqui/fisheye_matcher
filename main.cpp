@@ -254,6 +254,53 @@ std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, s
 }
 
 
+std::vector<cv::DMatch> nn_candidates(std::vector<std::vector<double> > candidates, double th){
+    std::vector<cv::DMatch> nn;
+
+    for (size_t i=0; i<candidates.size(); i++){
+        int idx_i = -1;
+        double dist_i = 1000000.;
+
+        for (size_t j=0; j<candidates[i].size(); j++){
+            if (candidates[i][j] >= 0. && candidates[i][j] < dist_i){
+
+                double dist_i_tmp = candidates[i][j];
+
+                int idx_j = -1;
+                double dist_j = -1000000.;
+
+                for (size_t k=0; k<candidates.size(); k++){
+                    if (candidates[k][j] >= 0. && candidates[k][j] < dist_j && candidates[k][j] < dist_i_tmp){
+                        idx_j = k;
+                        dist_j = candidates[k][j];
+                    }
+                }
+
+                if (idx_j < 0){
+                    idx_i = j;
+                    dist_i = dist_i_tmp;
+                }
+            }
+        }
+
+        if (dist_i >= 0. && dist_i <= th){
+            cv::DMatch dm;
+            dm.queryIdx = i;
+            dm.trainIdx = idx_i;
+            dm.imgIdx = 0;
+            dm.distance = dist_i;
+            nn.push_back(dm);
+
+            for (size_t j=0; j<candidates.size(); j++){
+                candidates[j][idx_i] = -1.;
+            }
+        }
+
+    }
+
+    return nn;
+}
+
 
 
 
@@ -267,6 +314,7 @@ std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, s
 int main(){
     bool bDraw = false;
     float th_alpha = 0.0174533; //1 deg
+    double th_sift = 100.0;
     //float th_alpha = 0.0349066; //2 deg
     //float th_alpha = 0.0523599; //3 deg
     //float th_alpha = 0.0698132; //4 deg
@@ -320,19 +368,31 @@ int main(){
     cv::Mat F12 = cv::findFundamentalMat(points1,points2);
     //drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
 
-    std::vector<cv::Point2f> kpoints1, kpoints2;
-    for (size_t i=0; i<kps1.size(); i++)
-        kpoints1.push_back(kps1[i].pt);
-    for (size_t i=0; i<kps2.size(); i++)
-        kpoints2.push_back(kps2[i].pt);
-
-    std::vector<cv::Vec3f> gmlines1, gmlines2;
-    cv::computeCorrespondEpilines(kpoints1, 1, F12, gmlines1);
-    cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
-    //drawEpipolarLines("epip2",F12,im1,im2,kpoints1,gmlines1,kpoints2);
 
 
-    std::vector<std::vector<double> > match_candidates = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, true);
+    std::vector<std::vector<double> > match_candidates = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, false);
+
+    std::vector<cv::DMatch> final_matches = nn_candidates(match_candidates, th_sift);
+
+    std::cout << "Final matches = " << final_matches.size() << std::endl;
+
+    int factor = 50;
+    std::vector<int> hist = std::vector<int>(th_sift/factor, 0);
+    for (size_t i=0; i<final_matches.size(); i++){
+        int val = floor(final_matches[i].distance / factor);
+        hist[val]++;
+    }
+
+    for (size_t i=0; i<hist.size(); i++){
+        std::cout << ((i*factor)+factor) << "(" << hist[i] << ") ";
+    }
+    std::cout << std::endl;
+
+    cv::Mat imout;
+    cv::drawMatches(im1,kps1,im2,kps2,final_matches,imout);
+    resize_and_display("final matches",imout,0.5);
+
+
 
 
     cv::waitKey(0);
