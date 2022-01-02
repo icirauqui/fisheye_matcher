@@ -187,7 +187,7 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
 }
 
 int main(){
-    bool bDraw = true;
+    bool bDraw = false;
     float th_alpha = 0.0174533; //1 deg
     //float th_alpha = 0.0349066; //2 deg
     //float th_alpha = 0.0523599; //3 deg
@@ -312,10 +312,6 @@ int main(){
     cv::Ptr<cv::DescriptorMatcher> matcher_1 = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
     std::vector< std::vector<cv::DMatch> > knn_matches_1;
 
-    std::cout << desc1.size() << "  " << match_candidates.size() << std::endl;
-    std::cout << desc1.rows << "  " << desc1.cols << std::endl;
-    //matcher_1->knnMatch( desc1, desc2, knn_matches_1, 2, match_candidates);
-
     std::vector<std::vector<double> > distances;
     for (size_t i=0; i<match_candidates.size(); i++){
         std::vector<double> distances_i;
@@ -381,39 +377,22 @@ int main(){
             }
             egmatches.push_back(dm);
         }
-
-
     }
 
-    std::cout << "kps2 = " << kps2.size() << std::endl;
-    std::cout << "matches = " << egmatches.size() << std::endl;
 
     std::vector<cv::DMatch> egmatches1;
-    double th = 400.0;
+    double th = 1000.0;
     for (size_t i=0; i<egmatches.size(); i++){
         if (egmatches[i].distance <= th){
             egmatches1.push_back(egmatches[i]);
         }
     }
 
-    std::cout << "matches1 = " << egmatches1.size() << std::endl;
-
+    std::cout << "good / matches / kps2 = " << egmatches1.size() << " / " << egmatches.size() << " / " << kps2.size() << std::endl;
 
     cv::Mat imout;
     cv::drawMatches(im1,kps1,im2,kps2,egmatches1,imout);
     resize_and_display("eg",imout,0.5);
-
-/*
-    for (size_t i=0; i<inv_index.size(); i++){
-        if (inv_index[i].size() > 0){
-            std::cout << i << "( ";
-            for (size_t j=0; j<inv_index[i].size(); j++){
-                std::cout << inv_index[i][j] << " ";
-            }
-            std::cout << " )" << std::endl;
-        }
-    }
-*/
 
     cv::waitKey(0);
     return 0;
