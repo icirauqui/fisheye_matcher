@@ -182,6 +182,88 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
     cv::waitKey(1);
 }
 
+std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, std::vector<cv::KeyPoint> vkps2, 
+                                                cv::Mat dsc1, cv::Mat dsc2, 
+                                                cv::Mat F, 
+                                                float lx, float ly, cv::Point3f co2, 
+                                                float th, bool bDraw = false){
+    // Get Points from KeyPoints
+    std::vector<cv::Point2f> kpoints1, kpoints2;
+    for (size_t i=0; i<vkps1.size(); i++)
+        kpoints1.push_back(vkps1[i].pt);
+    for (size_t i=0; i<vkps2.size(); i++)
+        kpoints2.push_back(vkps2[i].pt);
+
+    // Compute epilines with given F
+    std::vector<cv::Vec3f> gmlines1, gmlines2;
+    cv::computeCorrespondEpilines(kpoints1, 1, F, gmlines1);
+    cv::computeCorrespondEpilines(kpoints2, 2, F, gmlines2);
+
+    // Look for match candidates
+    std::vector<std::vector<double> > candidates = std::vector<std::vector<double> >(vkps1.size(), std::vector<double>(vkps2.size(),-1.));
+
+    for (size_t i=0; i<vkps1.size(); i++){
+        cv::Point3f pt0(0,-gmlines1[i][2]/gmlines1[i][1],0.);
+        cv::Point3f pt1(lx,-(gmlines1[i][2]+gmlines1[i][0]*lx)/gmlines1[i][1],0.);
+        cv::Vec4f pi = equation_plane(pt0, pt1, co2);
+
+        for (size_t j=0; j<kpoints2.size(); j++){
+            cv::Vec3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
+            cv::Vec3f v(kp(0)-co2.x, kp(1)-co2.y, kp(2)-co2.z);
+
+            if (angle_line_plane(pi,v) <= th) {
+                double dist_l2 = 0.;
+                if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+                    dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
+                candidates[i][j] = dist_l2;
+            }
+        }
+
+        if (bDraw){
+            cv::viz::Viz3d myWindow("Coordinate Frame");
+
+            // Coordinate system
+            myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(200));
+
+            // Camera frame
+            std::vector<cv::Point3f> camFr = {cv::Point3f(0.,ly,0.), cv::Point3f(lx,ly,0.), cv::Point3f(lx,0.,0.), cv::Point3f(0.,0.,0.), cv::Point3f(0.,ly,0.)};
+            cv::viz::WPolyLine camFrPoly(camFr,cv::viz::Color::gray());
+            myWindow.showWidget("camFrPoly", camFrPoly);
+
+            // Epiplane
+            cv::Vec3f line = equation_line(cv::Point2f(pt0.x,pt0.y), cv::Point2f(pt1.x,pt1.y));
+            std::vector<cv::Point3f> lineFr = frustum_line(line,lx,ly);
+            lineFr.push_back(co2);
+            lineFr.push_back(lineFr[0]);
+            cv::viz::WPolyLine epiplane(lineFr,cv::viz::Color::green());
+            myWindow.showWidget("epiplane", epiplane);
+
+            // Candidate points projective rays
+            for (size_t j=0; j<candidates[i].size(); j++){
+                if (candidates[i][j] >= 0.){
+                    cv::Point3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
+                    cv::viz::WLine ptLine(co2, kp, cv::viz::Color::red());
+                    myWindow.showWidget("ptLine"+j, ptLine);
+                }
+            }
+            myWindow.spin();
+        }
+    }
+
+    return candidates;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 int main(){
     bool bDraw = false;
     float th_alpha = 0.0174533; //1 deg
@@ -249,139 +331,9 @@ int main(){
     cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
     //drawEpipolarLines("epip2",F12,im1,im2,kpoints1,gmlines1,kpoints2);
 
-    std::vector<std::vector<int> > match_candidates;
-    for (size_t i=0; i<kps1.size(); i++){
-        cv::Point3f pt0(0,-gmlines1[i][2]/gmlines1[i][1],0.);
-        cv::Point3f pt1(im1.cols,-(gmlines1[i][2]+gmlines1[i][0]*im1.cols)/gmlines1[i][1],0.);
-        cv::Vec4f pi = equation_plane(pt0, pt1, c2);
 
-        std::vector<int> match_candidates_i;
-        for (size_t j=0; j<kpoints2.size(); j++){
-            cv::Vec3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
-            cv::Vec3f v(kp(0)-c2.x, kp(1)-c2.y, kp(2)-c2.z);
+    std::vector<std::vector<double> > match_candidates = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, true);
 
-            if (angle_line_plane(pi,v) <= th_alpha){
-                match_candidates_i.push_back(j);
-            }
-        }
-
-        match_candidates.push_back(match_candidates_i);
-
-        if (bDraw){
-            cv::viz::Viz3d myWindow("Coordinate Frame");
-
-            // Coordinate system
-            myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(200));
-
-            // Camera frame
-            std::vector<cv::Point3f> camFr = {cv::Point3f(0.,ly,0.), cv::Point3f(lx,ly,0.), cv::Point3f(lx,0.,0.), cv::Point3f(0.,0.,0.), cv::Point3f(0.,ly,0.)};
-            cv::viz::WPolyLine camFrPoly(camFr,cv::viz::Color::gray());
-            myWindow.showWidget("camFrPoly", camFrPoly);
-
-            // Epiplane
-            cv::Vec3f line = equation_line(cv::Point2f(pt0.x,pt0.y), cv::Point2f(pt1.x,pt1.y));
-            std::vector<cv::Point3f> lineFr = frustum_line(line,lx,ly);
-            lineFr.push_back(c2);
-            lineFr.push_back(lineFr[0]);
-            cv::viz::WPolyLine epiplane(lineFr,cv::viz::Color::green());
-            myWindow.showWidget("epiplane", epiplane);
-
-            // Candidate points projective rays
-            for (size_t j=0; j<match_candidates_i.size(); j++){
-                cv::Point3f kp(kpoints2[match_candidates_i[j]].x, kpoints2[match_candidates_i[j]].y, 0.);
-                cv::viz::WLine ptLine(c2, kp, cv::viz::Color::red());
-                myWindow.showWidget("ptLine"+j, ptLine);
-            }
-            myWindow.spin();
-        }
-    }
-
-
-
-    cv::Ptr<cv::DescriptorMatcher> matcher_1 = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-    std::vector< std::vector<cv::DMatch> > knn_matches_1;
-
-    std::vector<std::vector<double> > distances;
-    for (size_t i=0; i<match_candidates.size(); i++){
-        std::vector<double> distances_i;
-        for (size_t j=0; j<match_candidates[i].size(); j++){
-            double dist_l2  = norm(desc1.row(i),desc2.row(match_candidates[i][j]),cv::NORM_L2);
-            distances_i.push_back(dist_l2);
-        }
-        distances.push_back(distances_i);
-    }
-
-    // For each kp2 to which kp1s has been marked as candidate
-    std::vector<std::vector<int> > inv_index;
-    std::vector<std::vector<double> > inv_distances;
-    for (size_t i=0; i<kps2.size(); i++){
-        std::vector<int> inv_index_i;
-        std::vector<double> inv_distances_i;
-        for (size_t j=0; j<match_candidates.size(); j++){
-            for (size_t k=0; k<match_candidates[j].size(); k++){
-                if (match_candidates[j][k]==i){
-                    inv_index_i.push_back(j);
-                    inv_distances_i.push_back(distances[j][k]);
-                }
-            }
-        }
-        inv_index.push_back(inv_index_i);
-        inv_distances.push_back(inv_distances_i);
-    }
-
-
-    std::vector<cv::DMatch> egmatches;
-    for (size_t i=0; i<inv_distances.size(); i++){
-        double score = -1.0;
-        int id_1 = -1;
-        int id_2 = -1;
-        if (inv_distances[i].size() > 0){
-            for (size_t j=0; j<inv_distances[i].size(); j++){
-                if (inv_distances[i][j] > score && inv_distances[i][j] > -1.0){
-                    score = inv_distances[i][j];
-                    id_1 = inv_index[i][j];
-                    id_2 = j;
-                }
-            }
-        }
-        if (id_1 > -1){
-            for (size_t j=0; j<inv_index.size(); j++){
-                for (size_t k=0; k<inv_index[j].size(); k++){
-                    if (inv_index[j][k]==id_1){
-                        inv_index[j][k] = -1;
-                        inv_distances[j][k] = -1.0;
-                    }
-                }
-            }
-
-            cv::DMatch dm;
-            dm.queryIdx = id_1;
-            dm.trainIdx = id_2;
-            dm.imgIdx = 0;
-            for (size_t j=0; j<match_candidates[id_1].size(); j++){
-                if (match_candidates[id_1][j] == id_2){
-                    dm.distance = (float) distances[id_1][j];
-                    break;
-                }
-            }
-            egmatches.push_back(dm);
-        }
-    }
-
-
-    std::vector<cv::DMatch> egmatches1;
-    double th = 1000.0;
-    for (size_t i=0; i<egmatches.size(); i++){
-        if (egmatches[i].distance <= th){
-            egmatches1.push_back(egmatches[i]);
-        }
-    }
-
-    std::cout << "good / matches / kps2 = " << egmatches1.size() << " / " << egmatches.size() << " / " << kps2.size() << std::endl;
-
-    cv::Mat imout;
-    cv::drawMatches(im1,kps1,im2,kps2,egmatches1,imout);
-    resize_and_display("eg",imout,0.5);
 
     cv::waitKey(0);
     return 0;
