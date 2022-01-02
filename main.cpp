@@ -72,7 +72,7 @@ cv::Vec4f equation_plane(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3){
 }
 
 float angle_line_plane(cv::Vec4f pi, cv::Vec3f v){        
-    //Vector normal del plano
+    // Normal vector of plane
     cv::Vec3f n(pi(0), pi(1), pi(2));
 
     float num = abs(v(0)*n(0) + v(1)*n(1) + v(2)*n(2));
@@ -126,9 +126,6 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
         continue;
       }
     }
-    /*
-     * Epipolar lines of the 1st point set are drawn in the 2nd image and vice-versa
-     */
     cv::Scalar color(cv::RNG(256),cv::RNG(256),cv::RNG(256));
  
     cv::line(outImg(rect2),
@@ -143,7 +140,6 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
       color);
     cv::circle(outImg(rect2), points2[i], 3, color, -1, cv::LINE_AA);
   }
-  //cv::imshow(title, outImg);
   resize_and_display(title, outImg, 0.5);
   cv::waitKey(1);
 }
@@ -197,13 +193,10 @@ int main(){
     float fy = 717.4816;
     float cx = 735.3566;
     float cy = 552.7982;
-    cv::Mat K = (cv::Mat_<float>(3,3) << 717.2104, 0, 735.3566, 0, 717.4816, 552.7982, 0, 0, 1);
     float k1 = -0.1389272;
     float k2 = -0.001239606;
     float k3 = 0.0009125824;
     float k4 = -0.00004071615;
-    cv::Mat dist = (cv::Mat_<float>(1,4) << -0.1389272, -0.001239606, 0.0009125824, -0.00004071615);
-
 
     cv::Mat im1 = imread("images/1.png", cv::IMREAD_COLOR);
     cv::Mat im2 = imread("images/2.png", cv::IMREAD_COLOR);   
@@ -240,7 +233,6 @@ int main(){
         points1.push_back(pt1);
         points2.push_back(pt2);
     }
-
 
     // Epipolar matching, compute F and epilines
     cv::Mat F12 = cv::findFundamentalMat(points1,points2);
@@ -300,11 +292,8 @@ int main(){
                 cv::viz::WLine ptLine(c2, kp, cv::viz::Color::red());
                 myWindow.showWidget("ptLine"+j, ptLine);
             }
-
             myWindow.spin();
         }
-      
-
     }
 
 
