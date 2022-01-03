@@ -241,7 +241,7 @@ std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, s
                                                 cv::Mat dsc1, cv::Mat dsc2, 
                                                 cv::Mat F, 
                                                 float lx, float ly, cv::Point3f co2, 
-                                                float th, bool bDraw = false){
+                                                float th, bool bCrossVerification = false, bool bDraw = false){
     // Get Points from KeyPoints
     std::vector<cv::Point2f> kpoints1, kpoints2;
     for (size_t i=0; i<vkps1.size(); i++)
@@ -271,13 +271,26 @@ std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, s
             cv::Vec3f v(kp(0)-co2.x, kp(1)-co2.y, kp(2)-co2.z);
 
             if (angle_line_plane(pi,v) <= th) {
+                
+                // Cross verification with image 1
+                cv::Point3f im1pt0(0,-gmlines2[j][2]/gmlines2[j][1],0.);
+                cv::Point3f im1pt1(lx,-(gmlines2[j][2]+gmlines2[j][0]*lx)/gmlines2[j][1],0.);
+                cv::Vec4f im1pi = equation_plane(im1pt0, im1pt1, co2);
 
+                cv::Vec3f im1kp(kpoints1[i].x, kpoints1[i].y, 0.);
+                cv::Vec3f im1v(im1kp(0)-co2.x, im1kp(1)-co2.y, im1kp(2)-co2.z);
 
+                if (angle_line_plane(im1pi,im1v) <= th || !bCrossVerification) {
+                    double dist_l2 = 0.;
+                    if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+                        dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
+                    candidates[i][j] = dist_l2;
+                }
 
-                double dist_l2 = 0.;
-                if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
-                    dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
-                candidates[i][j] = dist_l2;
+                //double dist_l2 = 0.;
+                //if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+                //    dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
+                //candidates[i][j] = dist_l2;
             }
         }
 
@@ -357,7 +370,6 @@ std::vector<cv::DMatch> nn_candidates(std::vector<std::vector<double> > candidat
                 candidates[j][idx_i] = -1.;
             }
         }
-
     }
 
     return nn;
@@ -454,15 +466,19 @@ int main(){
     // histogram_DMatch("Matches distance",matches_distance,th_sift,10);
 
     // Match by angle threshold
-    std::vector<std::vector<double> > matches_angle_all = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, false);
+    std::vector<std::vector<double> > matches_angle_all = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, true, false);
     std::vector<cv::DMatch> matches_angle = nn_candidates(matches_angle_all, th_sift);
-    histogram_DMatch("Matches angle",matches_angle,th_sift,10);
 
-    cv::Mat imout_matches_knn, imout_matches_angle;
+
+    // Draw ressults
+    cv::Mat imout_matches_knn, imout_matches_distance, imout_matches_angle;
+
     cv::drawMatches(im1,kps1,im2,kps2,matches_knn,imout_matches_knn);
     cv::drawMatches(im1,kps1,im2,kps2,matches_angle,imout_matches_angle);
     resize_and_display("Matches KNN",imout_matches_knn,0.5);
     resize_and_display("Matches Angle",imout_matches_angle,0.5);
+    histogram_DMatch("Matches KNN",matches_knn,th_sift,10);
+    histogram_DMatch("Matches Angle",matches_angle,th_sift,10);
 
 
     cv::waitKey(0);
