@@ -41,69 +41,14 @@ std::vector<std::vector<cv::Point>> get_contours(cv::Mat img, int th = 20, int d
     return contours;
 }
 
-std::vector<bool> keypoints_in_contour(std::vector<cv::Point> contour, std::vector<cv::KeyPoint> kps){
-    std::vector<bool> bKpsIn = std::vector<bool>(kps.size(), false);
-    for (size_t i=0; i<kps.size(); i++){
-        if (cv::pointPolygonTest(contour,kps[i].pt,false) > 0){
-            bKpsIn[i] = true;
-        }
-    }
-    return bKpsIn;
-}
-
-/*
-void keypoints_in_contour(std::vector<cv::Point> contour, std::vector<cv::KeyPoint> &kps, cv::Mat &desc){
-    std::vector<cv::KeyPoint> kps_tmp = kps;
-    cv::Mat desc_tmp = desc;
-    int nKpsIn = 0;
-    std::vector<bool> bKpsIn = std::vector<bool>(kps.size(), false);
-
-    for (size_t i=0; i<kps.size(); i++){
-        if (cv::pointPolygonTest(contour,kps[i].pt,false) > 0){
-            nKpsIn++;
-            bKpsIn[i] = true;
-        }
-    }
-
-    kps.clear();
-    desc = cv::Mat(nKpsIn,desc_tmp.cols,desc_tmp.type());
-    for (size_t i=0; i<kps_tmp.size(); i++){
-        if (bKpsIn[i]){
-            kps.push_back(kps_tmp[i]);
-            desc.row(kps.size()-1) = desc_tmp.row(i);
-        }
-    }
-}
-*/
-
-std::vector<cv::KeyPoint> remove_kps(std::vector<bool> ptIn, std::vector<cv::KeyPoint> kps){
+std::vector<cv::KeyPoint> keypoints_in_contour(std::vector<cv::Point> contour, std::vector<cv::KeyPoint> kps){
     std::vector<cv::KeyPoint> kps_tmp;
-    for (size_t i=0; i<ptIn.size(); i++){
-        if (ptIn[i]){
+    for (size_t i=0; i<kps.size(); i++){
+        if (cv::pointPolygonTest(contour,kps[i].pt,false) > 0){
             kps_tmp.push_back(kps[i]);
         }
     }
     return kps_tmp;
-}
-
-cv::Mat remove_desc(std::vector<bool> ptIn, cv::Mat desc){
-    int nIn = 0;
-    for (size_t i=0; i<ptIn.size(); i++){
-        if (ptIn[i]){
-            nIn++;
-        }
-    }
-
-    int nDesc = 0;
-    cv::Mat desc_tmp = cv::Mat(nIn,desc.cols,desc.type());
-    for (size_t i=0; i<ptIn.size(); i++){
-        if (ptIn[i]){
-            desc_tmp.row(nDesc) = desc.row(i);
-            nDesc++;
-        }
-    }
-
-    return desc_tmp;
 }
 
 float rad_to_deg(float rad){
@@ -458,18 +403,16 @@ int main(){
     cv::Ptr<cv::SIFT> f2d = cv::SIFT::create(1000,4,0.04,10,1.6);
     std::vector<cv::KeyPoint> kps1, kps2;    
     cv::Mat desc1, desc2;     
-    f2d->detectAndCompute(im1, cv::noArray(), kps1, desc1);
-    f2d->detectAndCompute(im2, cv::noArray(), kps2, desc2);
+    f2d->detect(im1, kps1, cv::noArray());
+    f2d->detect(im2, kps2, cv::noArray());
 
     // Remove keypoints from contour
     std::vector<std::vector<cv::Point>> contours1 = get_contours(im1,20,3,false);
     std::vector<std::vector<cv::Point>> contours2 = get_contours(im2,20,3,false);
-    std::vector<bool> bKpsIn1 = keypoints_in_contour(contours1[0],kps1);
-    std::vector<bool> bKpsIn2 = keypoints_in_contour(contours2[0],kps2);
-    kps1 = remove_kps(bKpsIn1,kps1);
-    kps2 = remove_kps(bKpsIn2,kps2);
-    desc1 = remove_desc(bKpsIn1,desc1);
-    desc2 = remove_desc(bKpsIn2,desc2);
+    kps1 = keypoints_in_contour(contours1[0],kps1);
+    kps2 = keypoints_in_contour(contours2[0],kps2);
+    f2d->compute(im1,kps1,desc1);
+    f2d->compute(im2,kps2,desc2);
 
     //keypoints_in_contour(contours1[0],kps1,desc1);
     //keypoints_in_contour(contours2[0],kps2,desc2);
