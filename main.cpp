@@ -148,6 +148,24 @@ void resize_and_display(const std::string& title, const cv::Mat& img1, float fac
 static float distancePointLine(const cv::Point2f point, const cv::Vec3f& line){
     return std::fabs(line(0)*point.x + line(1)*point.y + line(2)) / std::sqrt(line(0)*line(0)+line(1)*line(1));
 }
+ 
+static float distanceSampson(const cv::Point2f& pt1, const cv::Point2f& pt2, cv::Mat F){
+    cv::Mat pt1w = (cv::Mat_<float>(3,1) << pt1.x, pt1.y, 0.);
+    cv::Mat pt2w = (cv::Mat_<float>(3,1) << pt2.x, pt2.y, 0.);
+
+    cv::Mat l1 = F.t()*pt2w;
+    cv::Mat l2 = F*pt1w;
+
+    cv::Vec3f l1v(l1.at<float>(0), l1.at<float>(1), l1.at<float>(2));
+    cv::Vec3f l2v(l2.at<float>(0), l2.at<float>(1), l2.at<float>(2));
+
+    cv::Mat Mnum = pt2w.t()*F*pt1w;
+    float fnum = Mnum.at<float>(0,0);
+    float den = l1v(0)*l1v(0) + l1v(1)*l1v(1) + l2v(0)*l2v(0) + l2v(1)*l2v(1);
+    float d = sqrt(fnum*fnum/den);
+
+    return d;
+}
 
 static void drawEpipolarLines(const std::string& title, const cv::Mat F,
                 const cv::Mat& img1, const cv::Mat& img2,
@@ -237,6 +255,86 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
     cv::waitKey(1);
 }
 
+std::vector<std::vector<double> > match_distance(std::vector<cv::KeyPoint> vkps1, std::vector<cv::KeyPoint> vkps2, 
+                                                cv::Mat dsc1, cv::Mat dsc2, 
+                                                cv::Mat F, 
+                                                float lx, float ly, cv::Point3f co2, 
+                                                float th, bool bCrossVerification = false, bool bDraw = false){
+    // Get Points from KeyPoints
+    std::vector<cv::Point2f> kpoints1, kpoints2;
+    for (size_t i=0; i<vkps1.size(); i++)
+        kpoints1.push_back(vkps1[i].pt);
+    for (size_t i=0; i<vkps2.size(); i++)
+        kpoints2.push_back(vkps2[i].pt);
+
+    // Compute epilines with given F
+    std::vector<cv::Vec3f> gmlines1, gmlines2;
+    cv::computeCorrespondEpilines(kpoints1, 1, F, gmlines1);
+    cv::computeCorrespondEpilines(kpoints2, 2, F, gmlines2);
+    
+    // Look for match candidates
+    std::vector<std::vector<double> > candidates = std::vector<std::vector<double> >(vkps1.size(), std::vector<double>(vkps2.size(),-1.));
+
+    for (size_t i=0; i<vkps1.size(); i++){
+        cv::Point3f pt0(0,-gmlines1[i][2]/gmlines1[i][1],0.);
+        cv::Point3f pt1(lx,-(gmlines1[i][2]+gmlines1[i][0]*lx)/gmlines1[i][1],0.);
+        cv::Vec3f line = equation_line(cv::Point2f(pt0.x,pt0.y), cv::Point2f(pt1.x,pt1.y));
+
+        for (size_t j=0; j<kpoints2.size(); j++){
+            cv::Point2f kp(kpoints2[j].x, kpoints2[j].y);
+
+            if (distancePointLine(kp,line) <= th) {
+                // Cross verification with image 1
+                cv::Point3f im1pt0(0,-gmlines2[j][2]/gmlines2[j][1],0.);
+                cv::Point3f im1pt1(lx,-(gmlines2[j][2]+gmlines2[j][0]*lx)/gmlines2[j][1],0.);
+                cv::Vec3f im1line = equation_line(cv::Point2f(im1pt0.x,im1pt0.y), cv::Point2f(im1pt1.x,im1pt1.y));
+
+                cv::Point2f im1kp(kpoints1[i].x, kpoints1[i].y);
+
+                if (distancePointLine(im1kp,im1line) <= th || !bCrossVerification) {
+                    double dist_l2 = 0.;
+                    if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+                        dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
+                    candidates[i][j] = dist_l2;
+                }
+            }
+        }
+
+        if (bDraw){
+            cv::viz::Viz3d myWindow("Coordinate Frame");
+
+            // Coordinate system
+            myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(200));
+
+            // Camera frame
+            std::vector<cv::Point3f> camFr = {cv::Point3f(0.,ly,0.), cv::Point3f(lx,ly,0.), cv::Point3f(lx,0.,0.), cv::Point3f(0.,0.,0.), cv::Point3f(0.,ly,0.)};
+            cv::viz::WPolyLine camFrPoly(camFr,cv::viz::Color::gray());
+            myWindow.showWidget("camFrPoly", camFrPoly);
+
+            // Epiplane
+            cv::Vec3f line = equation_line(cv::Point2f(pt0.x,pt0.y), cv::Point2f(pt1.x,pt1.y));
+            std::vector<cv::Point3f> lineFr = frustum_line(line,lx,ly);
+            lineFr.push_back(co2);
+            lineFr.push_back(lineFr[0]);
+            cv::viz::WPolyLine epiplane(lineFr,cv::viz::Color::green());
+            myWindow.showWidget("epiplane", epiplane);
+
+            // Candidate points projective rays
+            for (size_t j=0; j<candidates[i].size(); j++){
+                if (candidates[i][j] >= 0.){
+                    cv::Point3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
+                    cv::viz::WLine ptLine(co2, kp, cv::viz::Color::red());
+                    myWindow.showWidget("ptLine"+j, ptLine);
+                }
+            }
+            myWindow.spin();
+        }
+    }
+
+    return candidates;
+}
+
+
 std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, std::vector<cv::KeyPoint> vkps2, 
                                                 cv::Mat dsc1, cv::Mat dsc2, 
                                                 cv::Mat F, 
@@ -253,10 +351,6 @@ std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, s
     std::vector<cv::Vec3f> gmlines1, gmlines2;
     cv::computeCorrespondEpilines(kpoints1, 1, F, gmlines1);
     cv::computeCorrespondEpilines(kpoints2, 2, F, gmlines2);
-
-    cv::Vec2f aa = line2line_intersection(gmlines1[0],gmlines1[100]);
-    cv::Vec2f bb = line2line_intersection(gmlines1[200],gmlines1[300]);
-    std::cout << aa << "  " << bb << std::endl;
     
     // Look for match candidates
     std::vector<std::vector<double> > candidates = std::vector<std::vector<double> >(vkps1.size(), std::vector<double>(vkps2.size(),-1.));
@@ -424,7 +518,7 @@ int main(){
     cv::Point3f c2(cx,cy,f);
 
     // Detect features
-    cv::Ptr<cv::SIFT> f2d = cv::SIFT::create(1000,4,0.04,10,1.6);
+    cv::Ptr<cv::SIFT> f2d = cv::SIFT::create(1000,3,0.04,10,1.6);
     std::vector<cv::KeyPoint> kps1, kps2;    
     cv::Mat desc1, desc2;     
     f2d->detect(im1, kps1, cv::noArray());
@@ -443,7 +537,7 @@ int main(){
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
     std::vector< std::vector<cv::DMatch> > matches_knn_all;
     matcher->knnMatch( desc1, desc2, matches_knn_all, 2 );
-    const float ratio_thresh = 0.45f;
+    const float ratio_thresh = 0.8f;       //original 0.45f
     std::vector<cv::DMatch> matches_knn;
     for (size_t i = 0; i < matches_knn_all.size(); i++) {
         if (matches_knn_all[i][0].distance < ratio_thresh * matches_knn_all[i][1].distance) {
@@ -461,9 +555,8 @@ int main(){
     //drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
 
     // Match by distance threshold
-    // std::vector<std::vector<double> > matches_distance_all = match_distance(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_dist, false);
-    // std::vector<cv::DMatch> matches_distance = nn_candidates(matches_distance_all, th_sift);
-    // histogram_DMatch("Matches distance",matches_distance,th_sift,10);
+    std::vector<std::vector<double> > matches_distance_all = match_distance(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_dist, false);
+    std::vector<cv::DMatch> matches_distance = nn_candidates(matches_distance_all, th_sift);
 
     // Match by angle threshold
     std::vector<std::vector<double> > matches_angle_all = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, true, false);
@@ -474,11 +567,14 @@ int main(){
     cv::Mat imout_matches_knn, imout_matches_distance, imout_matches_angle;
 
     cv::drawMatches(im1,kps1,im2,kps2,matches_knn,imout_matches_knn);
+    cv::drawMatches(im1,kps1,im2,kps2,matches_distance,imout_matches_distance);
     cv::drawMatches(im1,kps1,im2,kps2,matches_angle,imout_matches_angle);
     resize_and_display("Matches KNN",imout_matches_knn,0.5);
+    resize_and_display("Matches Distance",imout_matches_distance,0.5);
     resize_and_display("Matches Angle",imout_matches_angle,0.5);
-    histogram_DMatch("Matches KNN",matches_knn,th_sift,10);
-    histogram_DMatch("Matches Angle",matches_angle,th_sift,10);
+    //histogram_DMatch("Matches KNN",matches_knn,th_sift,10);
+    //histogram_DMatch("Matches Distance",matches_distance,th_sift,10);
+    //histogram_DMatch("Matches Angle",matches_angle,th_sift,10);
 
 
     cv::waitKey(0);
