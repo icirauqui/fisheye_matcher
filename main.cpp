@@ -363,7 +363,20 @@ std::vector<cv::DMatch> nn_candidates(std::vector<std::vector<double> > candidat
     return nn;
 }
 
+void histogram_DMatch(std::vector<cv::DMatch> matches, int th, int factor){
+    std::cout << "Final matches = " << matches.size() << " - ";
 
+    std::vector<int> hist = std::vector<int>(th/factor, 0);
+    for (size_t i=0; i<matches.size(); i++){
+        int val = floor(matches[i].distance / factor);
+        hist[val]++;
+    }
+
+    for (size_t i=0; i<hist.size(); i++){
+        std::cout << ((i*factor)+factor) << "(" << hist[i] << ") ";
+    }
+    std::cout << std::endl;
+}
 
 
 
@@ -398,7 +411,6 @@ int main(){
     float f = (lx/(lx+ly))*fx + (ly/(lx+ly))*fy;
     cv::Point3f c2(cx,cy,f);
 
-
     // Detect and compute features
     cv::Ptr<cv::SIFT> f2d = cv::SIFT::create(1000,4,0.04,10,1.6);
     std::vector<cv::KeyPoint> kps1, kps2;    
@@ -413,9 +425,6 @@ int main(){
     kps2 = keypoints_in_contour(contours2[0],kps2);
     f2d->compute(im1,kps1,desc1);
     f2d->compute(im2,kps2,desc2);
-
-    //keypoints_in_contour(contours1[0],kps1,desc1);
-    //keypoints_in_contour(contours2[0],kps2,desc2);
 
     // Matcher BF/KNN
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
@@ -441,27 +450,13 @@ int main(){
     //drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
 
     std::vector<std::vector<double> > match_candidates = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, false);
-
     std::vector<cv::DMatch> final_matches = nn_candidates(match_candidates, th_sift);
 
-    std::cout << "Final matches = " << final_matches.size() << std::endl;
-
-    int factor = 50;
-    std::vector<int> hist = std::vector<int>(th_sift/factor, 0);
-    for (size_t i=0; i<final_matches.size(); i++){
-        int val = floor(final_matches[i].distance / factor);
-        hist[val]++;
-    }
-
-    for (size_t i=0; i<hist.size(); i++){
-        std::cout << ((i*factor)+factor) << "(" << hist[i] << ") ";
-    }
-    std::cout << std::endl;
+    histogram_DMatch(final_matches,th_sift,10);
 
     cv::Mat imout;
     cv::drawMatches(im1,kps1,im2,kps2,final_matches,imout);
     resize_and_display("final matches",imout,0.5);
-
 
 
 
