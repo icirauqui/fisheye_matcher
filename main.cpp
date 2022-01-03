@@ -1,14 +1,110 @@
+#include<opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
-//Visualization
 #include <opencv2/viz.hpp>
 
+#include <iostream>
 #include <math.h>
 
-#include <iostream>
+std::vector<std::vector<cv::Point>> get_contours(cv::Mat img, int th = 20, int dilation_size = 3, bool bShow = false){
+    //Contour-retrieval modes: RETR_TREE, RETR_LIST, RETR_EXTERNAL, RETR_CCOMP.
+    //Contour-approximation methods: CHAIN_APPROX_NONE, CHAIN_APPROX_SIMPLE.
+    cv::Mat img_gray;
+    cv::cvtColor(img, img_gray, cv::COLOR_BGR2GRAY);
+
+    // Threshold image
+    cv::Mat img_thresh;
+    cv::threshold(img_gray, img_thresh, th, 255, cv::THRESH_BINARY);
+
+    int dilation_type = cv::MORPH_CROSS;
+    cv::Mat element = cv::getStructuringElement(dilation_type,
+                       cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),
+                       cv::Point( dilation_size, dilation_size ) );
+    cv::erode(img_thresh,img_thresh,element);
+
+    // dilation_type MORPH_RECT, MORPH_CROSS, MORPH_ELLIPSE
+    // Detect contours on the binary image
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(img_thresh, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+
+    // Draw contours on the original image
+    if (bShow){
+        cv::imshow("Binary mage", img_thresh);
+        cv::Mat img_copy = img.clone();
+        cv::drawContours(img_copy, contours, -1, cv::Scalar(0, 255, 0), 2);
+        cv::imshow("None approximation", img_copy);
+    }
+
+    return contours;
+}
+
+std::vector<bool> keypoints_in_contour(std::vector<cv::Point> contour, std::vector<cv::KeyPoint> kps){
+    std::vector<bool> bKpsIn = std::vector<bool>(kps.size(), false);
+    for (size_t i=0; i<kps.size(); i++){
+        if (cv::pointPolygonTest(contour,kps[i].pt,false) > 0){
+            bKpsIn[i] = true;
+        }
+    }
+    return bKpsIn;
+}
+
+/*
+void keypoints_in_contour(std::vector<cv::Point> contour, std::vector<cv::KeyPoint> &kps, cv::Mat &desc){
+    std::vector<cv::KeyPoint> kps_tmp = kps;
+    cv::Mat desc_tmp = desc;
+    int nKpsIn = 0;
+    std::vector<bool> bKpsIn = std::vector<bool>(kps.size(), false);
+
+    for (size_t i=0; i<kps.size(); i++){
+        if (cv::pointPolygonTest(contour,kps[i].pt,false) > 0){
+            nKpsIn++;
+            bKpsIn[i] = true;
+        }
+    }
+
+    kps.clear();
+    desc = cv::Mat(nKpsIn,desc_tmp.cols,desc_tmp.type());
+    for (size_t i=0; i<kps_tmp.size(); i++){
+        if (bKpsIn[i]){
+            kps.push_back(kps_tmp[i]);
+            desc.row(kps.size()-1) = desc_tmp.row(i);
+        }
+    }
+}
+*/
+
+std::vector<cv::KeyPoint> remove_kps(std::vector<bool> ptIn, std::vector<cv::KeyPoint> kps){
+    std::vector<cv::KeyPoint> kps_tmp;
+    for (size_t i=0; i<ptIn.size(); i++){
+        if (ptIn[i]){
+            kps_tmp.push_back(kps[i]);
+        }
+    }
+    return kps_tmp;
+}
+
+cv::Mat remove_desc(std::vector<bool> ptIn, cv::Mat desc){
+    int nIn = 0;
+    for (size_t i=0; i<ptIn.size(); i++){
+        if (ptIn[i]){
+            nIn++;
+        }
+    }
+
+    int nDesc = 0;
+    cv::Mat desc_tmp = cv::Mat(nIn,desc.cols,desc.type());
+    for (size_t i=0; i<ptIn.size(); i++){
+        if (ptIn[i]){
+            desc_tmp.row(nDesc) = desc.row(i);
+            nDesc++;
+        }
+    }
+
+    return desc_tmp;
+}
 
 float rad_to_deg(float rad){
     return rad*180.0/M_PI;
@@ -69,6 +165,20 @@ cv::Vec4f equation_plane(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3){
 
     cv::Vec4f piVec(a,b,c,d);
     return piVec;
+}
+
+cv::Vec2f line2line_intersection(cv::Vec3f l1, cv::Vec3f l2){
+
+    //ax+by+c=0
+    float det = l1(0)*l2(1) + l2(0)*l1(1);
+
+    cv::Vec2f intersect(FLT_MAX,FLT_MAX);
+    if (det!=0){
+        intersect(0) = (l2(1)*l1(2) - l1(1)*l2(2))/det;
+        intersect(1) = (l1(0)*l2(2) - l2(0)*l1(2))/det;
+    }
+
+    return intersect;
 }
 
 float angle_line_plane(cv::Vec4f pi, cv::Vec3f v){        
@@ -199,6 +309,10 @@ std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, s
     cv::computeCorrespondEpilines(kpoints1, 1, F, gmlines1);
     cv::computeCorrespondEpilines(kpoints2, 2, F, gmlines2);
 
+    cv::Vec2f aa = line2line_intersection(gmlines1[0],gmlines1[100]);
+    cv::Vec2f bb = line2line_intersection(gmlines1[200],gmlines1[300]);
+    std::cout << aa << "  " << bb << std::endl;
+    
     // Look for match candidates
     std::vector<std::vector<double> > candidates = std::vector<std::vector<double> >(vkps1.size(), std::vector<double>(vkps2.size(),-1.));
 
@@ -212,6 +326,9 @@ std::vector<std::vector<double> > match_angle(std::vector<cv::KeyPoint> vkps1, s
             cv::Vec3f v(kp(0)-co2.x, kp(1)-co2.y, kp(2)-co2.z);
 
             if (angle_line_plane(pi,v) <= th) {
+
+
+
                 double dist_l2 = 0.;
                 if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
                     dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
@@ -341,9 +458,21 @@ int main(){
     cv::Ptr<cv::SIFT> f2d = cv::SIFT::create(1000,4,0.04,10,1.6);
     std::vector<cv::KeyPoint> kps1, kps2;    
     cv::Mat desc1, desc2;     
-    f2d->detectAndCompute( im1, cv::noArray(), kps1, desc1);
-    f2d->detectAndCompute( im2, cv::noArray(), kps2, desc2);
+    f2d->detectAndCompute(im1, cv::noArray(), kps1, desc1);
+    f2d->detectAndCompute(im2, cv::noArray(), kps2, desc2);
 
+    // Remove keypoints from contour
+    std::vector<std::vector<cv::Point>> contours1 = get_contours(im1,20,3,false);
+    std::vector<std::vector<cv::Point>> contours2 = get_contours(im2,20,3,false);
+    std::vector<bool> bKpsIn1 = keypoints_in_contour(contours1[0],kps1);
+    std::vector<bool> bKpsIn2 = keypoints_in_contour(contours2[0],kps2);
+    kps1 = remove_kps(bKpsIn1,kps1);
+    kps2 = remove_kps(bKpsIn2,kps2);
+    desc1 = remove_desc(bKpsIn1,desc1);
+    desc2 = remove_desc(bKpsIn2,desc2);
+
+    //keypoints_in_contour(contours1[0],kps1,desc1);
+    //keypoints_in_contour(contours2[0],kps2,desc2);
 
     // Matcher BF/KNN
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
@@ -367,8 +496,6 @@ int main(){
     // Epipolar matching, compute F and epilines
     cv::Mat F12 = cv::findFundamentalMat(points1,points2);
     //drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
-
-
 
     std::vector<std::vector<double> > match_candidates = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, false);
 
