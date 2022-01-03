@@ -363,15 +363,14 @@ std::vector<cv::DMatch> nn_candidates(std::vector<std::vector<double> > candidat
     return nn;
 }
 
-void histogram_DMatch(std::vector<cv::DMatch> matches, int th, int factor){
-    std::cout << "Final matches = " << matches.size() << " - ";
-
+void histogram_DMatch(const std::string& title, std::vector<cv::DMatch> matches, int th, int factor){
     std::vector<int> hist = std::vector<int>(th/factor, 0);
     for (size_t i=0; i<matches.size(); i++){
         int val = floor(matches[i].distance / factor);
         hist[val]++;
     }
 
+    std::cout << title << " = " << matches.size() << " - ";
     for (size_t i=0; i<hist.size(); i++){
         std::cout << ((i*factor)+factor) << "(" << hist[i] << ") ";
     }
@@ -389,10 +388,11 @@ void histogram_DMatch(std::vector<cv::DMatch> matches, int th, int factor){
 int main(){
     bool bDraw = false;
     float th_alpha = 0.0174533; //1 deg
-    double th_sift = 100.0;
     //float th_alpha = 0.0349066; //2 deg
     //float th_alpha = 0.0523599; //3 deg
     //float th_alpha = 0.0698132; //4 deg
+    float th_dist = 4.;
+    double th_sift = 100.0;
 
     float fx = 717.2104;
     float fy = 717.4816;
@@ -411,14 +411,15 @@ int main(){
     float f = (lx/(lx+ly))*fx + (ly/(lx+ly))*fy;
     cv::Point3f c2(cx,cy,f);
 
-    // Detect and compute features
+    // Detect features
     cv::Ptr<cv::SIFT> f2d = cv::SIFT::create(1000,4,0.04,10,1.6);
     std::vector<cv::KeyPoint> kps1, kps2;    
     cv::Mat desc1, desc2;     
     f2d->detect(im1, kps1, cv::noArray());
     f2d->detect(im2, kps2, cv::noArray());
 
-    // Remove keypoints from contour
+    // Remove keypoints from contour and compute descriptors
+    // Compute contour, erode shape defined with it and remove the kps outside it
     std::vector<std::vector<cv::Point>> contours1 = get_contours(im1,20,3,false);
     std::vector<std::vector<cv::Point>> contours2 = get_contours(im2,20,3,false);
     kps1 = keypoints_in_contour(contours1[0],kps1);
@@ -426,38 +427,42 @@ int main(){
     f2d->compute(im1,kps1,desc1);
     f2d->compute(im2,kps2,desc2);
 
-    // Matcher BF/KNN
+    // Match by BF/KNN
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-    std::vector< std::vector<cv::DMatch> > knn_matches;
-    matcher->knnMatch( desc1, desc2, knn_matches, 2 );
+    std::vector< std::vector<cv::DMatch> > matches_knn_all;
+    matcher->knnMatch( desc1, desc2, matches_knn_all, 2 );
     const float ratio_thresh = 0.45f;
-    std::vector<cv::DMatch> good_matches;
-    for (size_t i = 0; i < knn_matches.size(); i++) {
-        if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance) {
-            good_matches.push_back(knn_matches[i][0]);
+    std::vector<cv::DMatch> matches_knn;
+    for (size_t i = 0; i < matches_knn_all.size(); i++) {
+        if (matches_knn_all[i][0].distance < ratio_thresh * matches_knn_all[i][1].distance) {
+            matches_knn.push_back(matches_knn_all[i][0]);
         }
     }
-    std::vector<cv::Point2f> points1, points2;
-    for (unsigned int i=0; i<good_matches.size(); i++){
-        cv::Point2f pt1 = kps1[good_matches[i].queryIdx].pt;
-        cv::Point2f pt2 = kps2[good_matches[i].trainIdx].pt;
-        points1.push_back(pt1);
-        points2.push_back(pt2);
-    }
 
-    // Epipolar matching, compute F and epilines
+    // Compute F and epilines
+    std::vector<cv::Point2f> points1, points2;
+    for (unsigned int i=0; i<matches_knn.size(); i++){
+        points1.push_back(kps1[matches_knn[i].queryIdx].pt);
+        points2.push_back(kps2[matches_knn[i].trainIdx].pt);
+    }
     cv::Mat F12 = cv::findFundamentalMat(points1,points2);
     //drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
 
-    std::vector<std::vector<double> > match_candidates = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, false);
-    std::vector<cv::DMatch> final_matches = nn_candidates(match_candidates, th_sift);
+    // Match by distance threshold
+    // std::vector<std::vector<double> > matches_distance_all = match_distance(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_dist, false);
+    // std::vector<cv::DMatch> matches_distance = nn_candidates(matches_distance_all, th_sift);
+    // histogram_DMatch("Matches distance",matches_distance,th_sift,10);
 
-    histogram_DMatch(final_matches,th_sift,10);
+    // Match by angle threshold
+    std::vector<std::vector<double> > matches_angle_all = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, false);
+    std::vector<cv::DMatch> matches_angle = nn_candidates(matches_angle_all, th_sift);
+    histogram_DMatch("Matches angle",matches_angle,th_sift,10);
 
-    cv::Mat imout;
-    cv::drawMatches(im1,kps1,im2,kps2,final_matches,imout);
-    resize_and_display("final matches",imout,0.5);
-
+    cv::Mat imout_matches_knn, imout_matches_angle;
+    cv::drawMatches(im1,kps1,im2,kps2,matches_knn,imout_matches_knn);
+    cv::drawMatches(im1,kps1,im2,kps2,matches_angle,imout_matches_angle);
+    resize_and_display("Matches KNN",imout_matches_knn,0.5);
+    resize_and_display("Matches Angle",imout_matches_angle,0.5);
 
 
     cv::waitKey(0);
