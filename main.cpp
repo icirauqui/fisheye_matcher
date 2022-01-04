@@ -591,3 +591,8 @@ int main(){
     cv::waitKey(0);
     return 0;
 }
+
+
+
+//alternative to normL2 for distance between descriptors 
+//dists(i1, i2) = descriptors1_int.row(i1).dot(descriptors2_int.row(i2));

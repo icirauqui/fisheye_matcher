@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Jan  4 12:26:34 2022
+# Make data base, printed on Tue Jan  4 23:13:31 2022
 
 # Variables
 
@@ -32,8 +32,6 @@ XDG_SESSION_TYPE = x11
 VSCODE_LOG_NATIVE = false
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
-# environment
-IM_CONFIG_PHASE = 1
 # automatic
 @D = $(patsubst %/,%,$(dir $@))
 # environment
@@ -47,11 +45,11 @@ CURDIR := /home/icirauqui/w0rkspace/epipolar_matcher
 # makefile
 SHELL = /bin/sh
 # environment
+VTE_VERSION = 6003
+# environment
 VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
 # environment
-_ = /usr/share/code/code
-# environment
-JOURNAL_STREAM = 8:52551
+JOURNAL_STREAM = 8:49797
 # environment
 XDG_CONFIG_DIRS = /etc/xdg/xdg-ubuntu:/etc/xdg
 # makefile (from 'Makefile', line 1)
@@ -59,7 +57,7 @@ MAKEFILE_LIST :=  Makefile
 # automatic
 @F = $(notdir $@)
 # environment
-GIO_LAUNCHED_DESKTOP_FILE = /usr/share/applications/code.desktop
+IM_CONFIG_PHASE = 1
 # environment
 USERNAME = icirauqui
 # environment
@@ -73,9 +71,11 @@ DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
+_ = /usr/bin/code
+# environment
 ROS_PACKAGE_PATH = /opt/ros/noetic/share
 # environment
-MANAGERPID = 1673
+MANAGERPID = 1681
 # environment
 ROS_PYTHON_VERSION = 3
 # environment
@@ -83,19 +83,17 @@ LESSOPEN = | /usr/bin/lesspipe %s
 # environment
 LC_NAME = es_ES.UTF-8
 # environment
-VSCODE_CWD = /home/icirauqui
+VSCODE_CWD = /home/icirauqui/workspace_tfm/colmap_for_colonoscopy
 # default
 MAKE_HOST := x86_64-pc-linux-gnu
 # environment
-PATH = /home/icirauqui/.local/bin:/usr/local/cuda-11.2/bin:/usr/local/cuda-11.2/bin:/opt/ros/noetic/bin:/home/icirauqui/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+PATH = /usr/local/cuda-11.2/bin:/usr/local/cuda-11.2/bin:/opt/ros/noetic/bin:/home/icirauqui/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 # environment
 XDG_SESSION_DESKTOP = ubuntu
 # environment
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
-GJS_DEBUG_OUTPUT = stderr
-# environment
-SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1938,unix/XPS15:/tmp/.ICE-unix/1938
+SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1946,unix/XPS15:/tmp/.ICE-unix/1946
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from 'Makefile', line 2)
@@ -109,19 +107,17 @@ VSCODE_LOG_STACK = false
 # environment
 VSCODE_CRASH_REPORTER_START_OPTIONS = {"companyName":"Microsoft","productName":"VSCode","submitURL":"appcenter://code?aid=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=7f79b37b-5392-4554-8b2f-769116d20623&iid=7f79b37b-5392-4554-8b2f-769116d20623&sid=7f79b37b-5392-4554-8b2f-769116d20623","uploadToServer":true}
 # environment
-INVOCATION_ID = 9e5ce007de014fa28b81bf29cf74a310
+INVOCATION_ID = 0760cdf25c5a4776801e67e488127a04
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
 CMAKE_PREFIX_PATH = /opt/ros/noetic
 # environment
-LS_COLORS = 
+LS_COLORS = rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:
 # environment
 ROS_DISTRO = noetic
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
-# environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 3942
 # automatic
 %F = $(notdir $%)
 # environment
@@ -133,7 +129,7 @@ PWD = /home/icirauqui/w0rkspace/epipolar_matcher
 # default
 .LOADED := 
 # environment
-SSH_AGENT_PID = 1904
+SSH_AGENT_PID = 1912
 # environment
 PKG_CONFIG_PATH = /opt/ros/noetic/lib/pkgconfig
 # environment
@@ -149,6 +145,8 @@ LD_LIBRARY_PATH = /usr/local/cuda-11.2/lib64:/usr/local/cuda-11.2/lib64:/opt/ros
 # environment
 LESSCLOSE = /usr/bin/lesspipe %s %s
 # environment
+VSCODE_CLI = 1
+# environment
 VSCODE_CODE_CACHE_PATH = /home/icirauqui/.config/Code/CachedData/899d46d82c4c95423fb7e10e68eba52050e30ba3
 # environment
 LOGNAME = icirauqui
@@ -157,6 +155,8 @@ APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
 # automatic
 +F = $(notdir $+)
 # environment
+ELECTRON_NO_ATTACH_CONSOLE = 1
+# environment
 VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # environment
 GNOME_DESKTOP_SESSION_ID = this-is-deprecated
@@ -164,6 +164,8 @@ GNOME_DESKTOP_SESSION_ID = this-is-deprecated
 ^D = $(patsubst %/,%,$(dir $^))
 # environment
 LC_TIME = es_ES.UTF-8
+# environment
+COLORTERM = truecolor
 # default
 MAKE = $(MAKE_COMMAND)
 # default
@@ -171,13 +173,13 @@ MAKECMDGOALS := all
 # environment
 QT_IM_MODULE = ibus
 # environment
-SHLVL = 0
+SHLVL = 1
 # makefile (from 'Makefile', line 1)
 CC = g++
 # environment
 GNOME_SHELL_SESSION_MODE = ubuntu
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-959a262f-5d40-4586-bcd0-75bde29cd2e7.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-9f2ccc5d-5f8a-490a-8f35-d532b10c0918.sock
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -196,6 +198,8 @@ ROSLISP_PACKAGE_DIRECTORIES =
 LC_TELEPHONE = es_ES.UTF-8
 # default
 MAKE_COMMAND := make
+# environment
+OLDPWD = /home/icirauqui/workspace_tfm
 # default
 .VARIABLES := 
 # automatic
@@ -236,12 +240,14 @@ LC_MEASUREMENT = es_ES.UTF-8
 ROS_MASTER_URI = http://localhost:11311
 # environment
 LC_ALL = C
-# environment
-GJS_DEBUG_TOPICS = JS ERROR;JS LOG
 # makefile (from 'Makefile', line 4)
 LIBS = `pkg-config --cflags --libs opencv4`
+# environment
+GNOME_TERMINAL_SCREEN = /org/gnome/Terminal/screen/091c346b_a974_4125_9d07_f45e1d9beaac
 # automatic
 ^F = $(notdir $^)
+# environment
+GNOME_TERMINAL_SERVICE = :1.196
 # default
 SUFFIXES := 
 # environment
@@ -259,9 +265,11 @@ LC_ADDRESS = es_ES.UTF-8
 # environment
 LANG = C
 # environment
-VSCODE_PID = 3942
+TERM = xterm-256color
+# environment
+VSCODE_PID = 7824
 # variable set hash-table stats:
-# Load=124/1024=12%, Rehash=0, Collisions=20/151=13%
+# Load=128/1024=12%, Rehash=0, Collisions=20/155=13%
 
 # Pattern-specific Variable Values
 
@@ -277,9 +285,9 @@ VSCODE_PID = 3942
 
 # No implicit rules.
 
+ 
 # Files
 
- 
 # Not a target:
 all:
 #  Command line target.
@@ -327,6 +335,6 @@ main: main.cpp
 # strcache performance: lookups = 26 / hit rate = 26%
 # hash-table stats:
 # Load=19/8192=0%, Rehash=0, Collisions=1/26=4%
-# Finished Make data base on Tue Jan  4 12:26:34 2022
+# Finished Make data base on Tue Jan  4 23:13:31 2022
 
  
