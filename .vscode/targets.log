@@ -1,4 +1,6 @@
 make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+make: *** No rule to make target 'all'.  Stop.
+ 
 # GNU Make 4.2.1
 # Built for x86_64-pc-linux-gnu
 # Copyright (C) 1988-2016 Free Software Foundation, Inc.
@@ -6,7 +8,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Mon Jan  3 18:09:28 2022
+# Make data base, printed on Tue Jan  4 12:26:34 2022
 
 # Variables
 
@@ -49,7 +51,7 @@ VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupp
 # environment
 _ = /usr/share/code/code
 # environment
-JOURNAL_STREAM = 8:43923
+JOURNAL_STREAM = 8:52551
 # environment
 XDG_CONFIG_DIRS = /etc/xdg/xdg-ubuntu:/etc/xdg
 # makefile (from 'Makefile', line 1)
@@ -73,7 +75,7 @@ VSCODE_VERBOSE_LOGGING = true
 # environment
 ROS_PACKAGE_PATH = /opt/ros/noetic/share
 # environment
-MANAGERPID = 1592
+MANAGERPID = 1673
 # environment
 ROS_PYTHON_VERSION = 3
 # environment
@@ -93,7 +95,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 GJS_DEBUG_OUTPUT = stderr
 # environment
-SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1857,unix/XPS15:/tmp/.ICE-unix/1857
+SESSION_MANAGER = local/XPS15:@/tmp/.ICE-unix/1938,unix/XPS15:/tmp/.ICE-unix/1938
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from 'Makefile', line 2)
@@ -107,7 +109,7 @@ VSCODE_LOG_STACK = false
 # environment
 VSCODE_CRASH_REPORTER_START_OPTIONS = {"companyName":"Microsoft","productName":"VSCode","submitURL":"appcenter://code?aid=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=7f79b37b-5392-4554-8b2f-769116d20623&iid=7f79b37b-5392-4554-8b2f-769116d20623&sid=7f79b37b-5392-4554-8b2f-769116d20623","uploadToServer":true}
 # environment
-INVOCATION_ID = c6d375d9be4944ce8e6d8dc0bbf121bb
+INVOCATION_ID = 9e5ce007de014fa28b81bf29cf74a310
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
@@ -119,7 +121,7 @@ ROS_DISTRO = noetic
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 3640
+GIO_LAUNCHED_DESKTOP_FILE_PID = 3942
 # automatic
 %F = $(notdir $%)
 # environment
@@ -131,7 +133,7 @@ PWD = /home/icirauqui/w0rkspace/epipolar_matcher
 # default
 .LOADED := 
 # environment
-SSH_AGENT_PID = 1823
+SSH_AGENT_PID = 1904
 # environment
 PKG_CONFIG_PATH = /opt/ros/noetic/lib/pkgconfig
 # environment
@@ -175,7 +177,7 @@ CC = g++
 # environment
 GNOME_SHELL_SESSION_MODE = ubuntu
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-8bcd02b2-41f9-4cba-bd98-e8bd7428e500.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-959a262f-5d40-4586-bcd0-75bde29cd2e7.sock
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -257,7 +259,7 @@ LC_ADDRESS = es_ES.UTF-8
 # environment
 LANG = C
 # environment
-VSCODE_PID = 3640
+VSCODE_PID = 3942
 # variable set hash-table stats:
 # Load=124/1024=12%, Rehash=0, Collisions=20/151=13%
 
@@ -267,9 +269,9 @@ VSCODE_PID = 3640
 
 # Directories
 
-# . (device 66311, inode 11280462): 19 files, no impossibilities.
+# . (device 66311, inode 11280462): 14 files, no impossibilities.
 
-# 19 files, no impossibilities in 1 directories.
+# 14 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -277,6 +279,7 @@ VSCODE_PID = 3640
 
 # Files
 
+ 
 # Not a target:
 all:
 #  Command line target.
@@ -286,9 +289,6 @@ all:
 
 # Not a target:
 Makefile:
- 
-make: *** No rule to make target 'all'.  Stop.
- 
 #  Implicit rule search has been done.
 #  Last modified 2021-12-20 20:33:37.034329179
 #  File has been updated.
@@ -321,12 +321,12 @@ main: main.cpp
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 24 / storage = 251 B / avg = 10 B
-# current buf: size = 8162 B / used = 251 B / count = 24 / avg = 10 B
+# strcache buffers: 1 (0) / strings = 19 / storage = 155 B / avg = 8 B
+# current buf: size = 8162 B / used = 155 B / count = 19 / avg = 8 B
 
-# strcache performance: lookups = 31 / hit rate = 22%
+# strcache performance: lookups = 26 / hit rate = 26%
 # hash-table stats:
-# Load=24/8192=0%, Rehash=0, Collisions=1/31=3%
-# Finished Make data base on Mon Jan  3 18:09:28 2022
+# Load=19/8192=0%, Rehash=0, Collisions=1/26=4%
+# Finished Make data base on Tue Jan  4 12:26:34 2022
 
  

@@ -150,8 +150,10 @@ static float distancePointLine(const cv::Point2f point, const cv::Vec3f& line){
 }
  
 static float distanceSampson(const cv::Point2f& pt1, const cv::Point2f& pt2, cv::Mat F){
-    cv::Mat pt1w = (cv::Mat_<float>(3,1) << pt1.x, pt1.y, 0.);
-    cv::Mat pt2w = (cv::Mat_<float>(3,1) << pt2.x, pt2.y, 0.);
+    float data1[3] = { pt1.x, pt1.y, 0.};
+    float data2[3] = { pt2.x, pt2.y, 0.};
+    cv::Mat pt1w = cv::Mat(3, 1, F.type(), data1);
+    cv::Mat pt2w = cv::Mat(3, 1, F.type(), data2);
 
     cv::Mat l1 = F.t()*pt2w;
     cv::Mat l2 = F*pt1w;
@@ -255,7 +257,7 @@ static void drawEpipolarLines(const std::string& title, const cv::Mat F,
     cv::waitKey(1);
 }
 
-std::vector<std::vector<double> > match_distance(std::vector<cv::KeyPoint> vkps1, std::vector<cv::KeyPoint> vkps2, 
+std::vector<std::vector<double> > match_sampson(std::vector<cv::KeyPoint> vkps1, std::vector<cv::KeyPoint> vkps2, 
                                                 cv::Mat dsc1, cv::Mat dsc2, 
                                                 cv::Mat F, 
                                                 float lx, float ly, cv::Point3f co2, 
@@ -283,7 +285,14 @@ std::vector<std::vector<double> > match_distance(std::vector<cv::KeyPoint> vkps1
         for (size_t j=0; j<kpoints2.size(); j++){
             cv::Point2f kp(kpoints2[j].x, kpoints2[j].y);
 
-            if (distancePointLine(kp,line) <= th) {
+            //if (distancePointLine(kp,line) <= th) {
+            if (distanceSampson(vkps1[i].pt,kp,F)) {
+                double dist_l2 = 0.;
+                if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+                    dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
+                candidates[i][j] = dist_l2;
+
+                /*
                 // Cross verification with image 1
                 cv::Point3f im1pt0(0,-gmlines2[j][2]/gmlines2[j][1],0.);
                 cv::Point3f im1pt1(lx,-(gmlines2[j][2]+gmlines2[j][0]*lx)/gmlines2[j][1],0.);
@@ -297,6 +306,7 @@ std::vector<std::vector<double> > match_distance(std::vector<cv::KeyPoint> vkps1
                         dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
                     candidates[i][j] = dist_l2;
                 }
+                */
             }
         }
 
@@ -476,7 +486,7 @@ void histogram_DMatch(const std::string& title, std::vector<cv::DMatch> matches,
         hist[val]++;
     }
 
-    std::cout << title << " = " << matches.size() << " - ";
+    std::cout << title << " = " << matches.size() << "\t - ";
     for (size_t i=0; i<hist.size(); i++){
         std::cout << ((i*factor)+factor) << "(" << hist[i] << ") ";
     }
@@ -497,17 +507,19 @@ int main(){
     //float th_alpha = 0.0349066; //2 deg
     //float th_alpha = 0.0523599; //3 deg
     //float th_alpha = 0.0698132; //4 deg
-    float th_dist = 4.;
+    float th_sampson = 10.;
     double th_sift = 100.0;
 
     float fx = 717.2104;
     float fy = 717.4816;
     float cx = 735.3566;
     float cy = 552.7982;
+    cv::Mat K = (cv::Mat_<float>(3,3) << fx, 0., cx, 0., fy, cy,  0., 0., 1.);
     float k1 = -0.1389272;
     float k2 = -0.001239606;
     float k3 = 0.0009125824;
     float k4 = -0.00004071615;
+    cv::Vec4f D(k1,k2,k3,k4);
 
     cv::Mat im1 = imread("images/1.png", cv::IMREAD_COLOR);
     cv::Mat im2 = imread("images/2.png", cv::IMREAD_COLOR);   
@@ -555,26 +567,25 @@ int main(){
     //drawEpipolarLines("epip1",F12,im1,im2,points1,points2);
 
     // Match by distance threshold
-    std::vector<std::vector<double> > matches_distance_all = match_distance(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_dist, false);
-    std::vector<cv::DMatch> matches_distance = nn_candidates(matches_distance_all, th_sift);
+    std::vector<std::vector<double> > matches_sampson_all = match_sampson(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_sampson, false);
+    std::vector<cv::DMatch> matches_sampson = nn_candidates(matches_sampson_all, th_sift);
 
     // Match by angle threshold
     std::vector<std::vector<double> > matches_angle_all = match_angle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, true, false);
     std::vector<cv::DMatch> matches_angle = nn_candidates(matches_angle_all, th_sift);
 
-
     // Draw ressults
-    cv::Mat imout_matches_knn, imout_matches_distance, imout_matches_angle;
+    cv::Mat imout_matches_knn, imout_matches_sampson, imout_matches_angle;
 
     cv::drawMatches(im1,kps1,im2,kps2,matches_knn,imout_matches_knn);
-    cv::drawMatches(im1,kps1,im2,kps2,matches_distance,imout_matches_distance);
+    cv::drawMatches(im1,kps1,im2,kps2,matches_sampson,imout_matches_sampson);
     cv::drawMatches(im1,kps1,im2,kps2,matches_angle,imout_matches_angle);
     resize_and_display("Matches KNN",imout_matches_knn,0.5);
-    resize_and_display("Matches Distance",imout_matches_distance,0.5);
+    resize_and_display("Matches Sampson",imout_matches_sampson,0.5);
     resize_and_display("Matches Angle",imout_matches_angle,0.5);
-    //histogram_DMatch("Matches KNN",matches_knn,th_sift,10);
-    //histogram_DMatch("Matches Distance",matches_distance,th_sift,10);
-    //histogram_DMatch("Matches Angle",matches_angle,th_sift,10);
+    //histogram_DMatch("Matches KNN    ",matches_knn,th_sift,10);
+    //histogram_DMatch("Matches Sampson",matches_sampson,th_sift,10);
+    //histogram_DMatch("Matches Angle  ",matches_angle,th_sift,10);
 
 
     cv::waitKey(0);
