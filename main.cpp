@@ -112,6 +112,22 @@ cv::Vec4f equation_plane(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3){
     return piVec;
 }
 
+cv::Vec4f equation_plane(cv::Vec3f p1, cv::Vec3f p2, cv::Vec3f p3){
+    float a1 = p2(0) - p1(0);
+    float b1 = p2(1) - p1(1);
+    float c1 = p2(2) - p1(2);
+    float a2 = p3(0) - p1(0);
+    float b2 = p3(1) - p1(1);
+    float c2 = p3(2) - p1(2);
+    float a = b1 * c2 - b2 * c1;
+    float b = a2 * c1 - a1 * c2;
+    float c = a1 * b2 - b1 * a2;
+    float d = (- a * p1(0) - b * p1(1) - c * p1(2));
+
+    cv::Vec4f piVec(a,b,c,d);
+    return piVec;
+}
+
 cv::Vec2f line2line_intersection(cv::Vec3f l1, cv::Vec3f l2){
 
     //ax+by+c=0
