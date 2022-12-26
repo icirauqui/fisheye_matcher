@@ -537,8 +537,8 @@ int main(){
     float k4 = -0.00004071615;
     cv::Vec4f D(k1,k2,k3,k4);
 
-    cv::Mat im1 = imread("images/1.png", cv::IMREAD_COLOR);
-    cv::Mat im2 = imread("images/2.png", cv::IMREAD_COLOR);   
+    cv::Mat im1 = imread("../images/1.png", cv::IMREAD_COLOR);
+    cv::Mat im2 = imread("../images/2.png", cv::IMREAD_COLOR);   
     
     float lx = im1.cols;
     float ly = im1.rows;
