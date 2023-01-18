@@ -70,6 +70,10 @@
         "stop_token": "cpp",
         "valarray": "cpp",
         "strstream": "cpp",
-        "cfenv": "cpp"
+        "cfenv": "cpp",
+        "any": "cpp",
+        "forward_list": "cpp",
+        "ranges": "cpp",
+        "shared_mutex": "cpp"
     }
 }

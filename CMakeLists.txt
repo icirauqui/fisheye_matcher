@@ -27,6 +27,9 @@ include_directories(
 )
 
 add_executable(fisheye_matcher
+  third_party/nlohmann/json.hpp
+  cc/ang_matcher.cpp
+  cc/aux.h
   cc/main.cpp
 )
 
