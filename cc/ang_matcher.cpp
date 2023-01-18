@@ -590,9 +590,6 @@ void ResizeAndDisplay(const std::string &title, const std::vector<cv::Mat> &imgs
   int resultImgW = imgs2[0].cols*imgsInRow;
   int resultImgH = imgs2[0].rows*imgsInCol;
 
-  std::cout << "resultImgW: " << resultImgW << " - " << imgs2[0].cols << std::endl;
-  std::cout << "resultImgH: " << resultImgH << " - " << imgs2[0].rows << std::endl;
-
   cv::Mat resultImg = cv::Mat::zeros(resultImgH, resultImgW, CV_8UC3);
   int ind=0;
   cv::Mat tmp;
@@ -601,8 +598,6 @@ void ResizeAndDisplay(const std::string &title, const std::vector<cv::Mat> &imgs
       if(ind<imgs2.size()) {
       int cell_row = i*cellSizeH;
       int cell_col = j*cellSizeW;
-      std::cout << "cell_row: " << cell_row << std::endl;
-      std::cout << "cell_col: " << cell_col << std::endl;
       imgs2[ind].copyTo(resultImg(cv::Range(cell_row, cell_row+imgs2[ind].rows),
                                   cv::Range(cell_col, cell_col+imgs2[ind].cols)));
       }
