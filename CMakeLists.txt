@@ -28,6 +28,12 @@ include_directories(
 
 add_executable(fisheye_matcher
   third_party/nlohmann/json.hpp
+  cc/feature_matcher.cpp
+  cc/feature_matcher.h
+  #cc/image.cpp
+  #cc/image.h
+  cc/camera.cpp
+  cc/camera.h
   cc/ang_matcher.cpp
   cc/aux.h
   cc/main.cpp

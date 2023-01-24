@@ -153,7 +153,7 @@ std::vector<cv::KeyPoint> KeypointsInContour(std::vector<cv::Point> contour, std
   return kps_tmp;
 }
 
-
+/*
 std::vector<cv::DMatch> MatchKnn(const cv::Mat &descriptors1, const cv::Mat &descriptors2, float ratio_thresh) {
   // Match by BF/KNN
   cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
@@ -167,6 +167,7 @@ std::vector<cv::DMatch> MatchKnn(const cv::Mat &descriptors1, const cv::Mat &des
   }
   return matches_knn;
 }
+*/
 
 
 

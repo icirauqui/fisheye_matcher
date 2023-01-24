@@ -16,3 +16,14 @@ We present a new implementation for the matching process applying epipolar geome
 
 <img src=".readme/epipolar3.png" alt="drawing" width="300"/>
 
+
+
+## Test performed in main file
+
+1. Camera parameters load from json file.
+2. Load images.
+3. Compute keypoints and descriptors.
+4. Feature matching via BF, KNN or FLANN.
+5. Compute Fundamental Matrix and epipolar lines.
+6. Guided matching via Sampson distance and angular error thresholding.
+7. Visualization.

@@ -35,7 +35,7 @@ std::vector<std::vector<cv::Point>> GetContours(cv::Mat img, int th = 20, int di
 std::vector<cv::KeyPoint> KeypointsInContour(std::vector<cv::Point> contour, std::vector<cv::KeyPoint> kps);
 
 
-std::vector<cv::DMatch> MatchKnn(const cv::Mat &descriptors1, const cv::Mat &descriptors2, float ratio_thresh = 0.8);
+//std::vector<cv::DMatch> MatchKnn(const cv::Mat &descriptors1, const cv::Mat &descriptors2, float ratio_thresh = 0.8);
 
 
 cv::Vec3f EquationLine(cv::Point2f p1, cv::Point2f p2);

@@ -1,3 +1,7 @@
+#include <iostream>
+#include <fstream>
+#include <math.h>
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -5,19 +9,15 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz.hpp>
 
-#include <iostream>
-#include <math.h>
-
 #include "aux.h"
 #include "ang_matcher.h"
-
-#include <fstream>
 #include "../third_party/nlohmann/json.hpp"
+#include "camera.h"
+#include "feature_matcher.h"
 
 
 
 using namespace am;
-
 
 
 int main() {
@@ -27,28 +27,10 @@ int main() {
   double th_sift = 100.0;
 
   std::cout << " 1. Loading parameters from cams.json" << std::endl;
-  
-  std::ifstream json_file("../images/cams.json");
-  nlohmann::json json_data = nlohmann::json::parse(json_file);
-  nlohmann::json c1 = json_data["cam1"];
 
-  if (c1.empty()) {
-    std::cout << "Unable to load parameters from cams.json" << std::endl;
-    return 0;
-  }
-
-  float fx = c1["fx"];
-  float fy = c1["fy"];
-  float cx = c1["cx"];
-  float cy = c1["cy"];
-  cv::Mat K = (cv::Mat_<float>(3, 3) << fx, 0., cx, 0., fy, cy, 0., 0., 1.);
-  float k1 = c1["k1"];
-  float k2 = c1["k2"];
-  float k3 = c1["k3"];
-  float k4 = c1["k4"];
-  cv::Vec4f D(k1, k2, k3, k4);
-
-
+  Camera cam = Camera("../images/cams.json");
+  cv::Mat K = cam.K();
+  cv::Vec4f D = cam.D();
 
 
   std::cout << " 2. Loading images" << std::endl;
@@ -56,18 +38,23 @@ int main() {
   cv::Mat im1 = imread("../images/1.png", cv::IMREAD_COLOR);
   cv::Mat im2 = imread("../images/2.png", cv::IMREAD_COLOR);
 
-  float lx = im1.cols;
-  float ly = im1.rows;
-  float f = (lx / (lx + ly)) * fx + (ly / (lx + ly)) * fy;
-  cv::Point3f c2(cx, cy, f);
+  float f = cam.FocalLength();
+  cv::Point3f c2 = cam.CameraCenter();
 
 
 
 
   std::cout << " 3. Detecting features" << std::endl;
 
-  // Detect features
-  cv::Ptr<cv::SIFT> f2d = cv::SIFT::create(1000, 3, 0.04, 10, 1.6);
+  // Detect features (parameters from COLMAP)
+  int max_features = 8192;
+  int num_octaves = 4;
+  int octave_resolution = 3;
+  float peak_threshold = 0.02 / octave_resolution;  // 0.04
+  float edge_threshold = 10;
+  float sigma = 1.6;
+  
+  cv::Ptr<cv::SIFT> f2d = cv::SIFT::create(max_features, num_octaves, peak_threshold, edge_threshold, sigma);
   std::vector<cv::KeyPoint> kps1, kps2;
   cv::Mat desc1, desc2;
   f2d->detect(im1, kps1, cv::noArray());
@@ -88,30 +75,56 @@ int main() {
 
   std::cout << " 4. Matching features" << std::endl;
 
+  float max_ratio = 0.8f;
+  float max_distance = 0.7f;
+  bool cross_check = true;
+  int max_num_matches = 32768;
+  float max_error = 4.0f;
+  float confidence = 0.999f;
+  int max_num_trials = 10000;
+  float min_inliner_ratio = 0.25f;
+  int min_num_inliers = 15;
+
   std::vector<cv::DMatch> matches_knn = MatchKnn(desc1, desc2, 0.8f);
+  std::vector<cv::DMatch> matches_knn_07 = MatchKnn(desc1, desc2, 0.7f);
+  std::vector<cv::DMatch> matches_flann = MatchFLANN(desc1, desc2, 0.8f);
+  std::vector<cv::DMatch> matches_flann_07 = MatchFLANN(desc1, desc2, 0.7f);
+  std::vector<cv::DMatch> matches_bf = MatchBF(desc1, desc2, true);
+
+  std::cout << " 4.1. Knn   | 0.7 | 0.8 :\t" << matches_knn_07.size()   << "\t|\t" << matches_knn.size() << std::endl;
+  std::cout << " 4.2. Flann | 0.7 | 0.8 :\t" << bold_on << matches_flann_07.size() << bold_off << "\t|\t" << matches_flann.size() << std::endl;
+  std::cout << " 4.3. BF                :\t" << matches_bf.size()       << "\t|\t" << std::endl;
+
+  // Select the matches to use
+  std::vector<cv::DMatch> matches = matches_flann_07;
 
 
-
-  
 
 
   std::cout << " 5. Compute F and epilines" << std::endl;
 
   // Compute F and epilines
   std::vector<cv::Point2f> points1, points2;
-  for (unsigned int i = 0; i < matches_knn.size(); i++)
-  {
+  for (unsigned int i = 0; i < matches_knn.size(); i++) {
     points1.push_back(kps1[matches_knn[i].queryIdx].pt);
     points2.push_back(kps2[matches_knn[i].trainIdx].pt);
   }
   cv::Mat F12 = cv::findFundamentalMat(points1, points2);
-  // DrawEpipolarLines("epip1",F12,im1,im2,points1,points2);
+
+  //DrawEpipolarLines("epip1",F12,im1,im2,points1,points2);
+  //cv::waitKey(0);
+  
+  return 0;
+
+
 
 
 
 
 
   std::cout << " 6. Compute matches by distance and angle" << std::endl;
+  float lx = im1.cols;
+  float ly = im1.rows;
 
   // Match by distance threshold
   std::vector<std::vector<double>> matches_sampson_all = MatchSampson(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_sampson, false);
