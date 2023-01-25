@@ -5,6 +5,63 @@ namespace am {
 
 
 
+cv::Mat CompareEpipolarLines(const std::string &title, const cv::Mat F,
+                              const cv::Mat &img1, const cv::Mat &img2,
+                              const std::vector<cv::Point2f> points1, const std::vector<cv::Point2f> points2,
+                              const float inlierDistance) {
+  CV_Assert(img1.size() == img2.size() && img1.type() == img2.type());
+  cv::Mat outImg(img1.rows, img1.cols * 2, CV_8UC3);
+  cv::Rect rect1(0, 0, img1.cols, img1.rows);
+  cv::Rect rect2(img1.cols, 0, img1.cols, img1.rows);
+
+  if (img1.type() == CV_8U)
+  {
+    cv::cvtColor(img1, outImg(rect1), cv::COLOR_GRAY2BGR);
+    cv::cvtColor(img2, outImg(rect2), cv::COLOR_GRAY2BGR);
+  }
+  else
+  {
+    img1.copyTo(outImg(rect1));
+    img2.copyTo(outImg(rect2));
+  }
+
+  std::vector<cv::Vec3f> epilines1, epilines2;
+  cv::computeCorrespondEpilines(points1, 1, F, epilines1); // Index starts with 1
+  cv::computeCorrespondEpilines(points2, 2, F, epilines2);
+
+  //std::cout << "OCV " << epilines1[0][0] << " " << epilines1[0][1] << " " << epilines1[0][2] << std::endl;
+
+  CV_Assert(points1.size() == points2.size() && points2.size() == epilines1.size() && epilines1.size() == epilines2.size());
+
+  for (size_t i = 0; i < points1.size(); i++)
+  {
+    if (inlierDistance > 0)
+    {
+      if (DistancePointLine(points1[i], epilines2[i]) > inlierDistance ||
+          DistancePointLine(points2[i], epilines1[i]) > inlierDistance)
+      {
+        // The point match is no inlier
+        continue;
+      }
+    }
+    cv::Scalar color(cv::RNG(256), cv::RNG(256), cv::RNG(256));
+
+    cv::line(outImg(rect2),
+             cv::Point(0, -epilines1[i][2] / epilines1[i][1]),
+             cv::Point(img1.cols, -(epilines1[i][2] + epilines1[i][0] * img1.cols) / epilines1[i][1]),
+             color);
+    cv::circle(outImg(rect1), points1[i], 3, color, -1, cv::LINE_AA);
+
+    cv::line(outImg(rect1),
+             cv::Point(0, -epilines2[i][2] / epilines2[i][1]),
+             cv::Point(img2.cols, -(epilines2[i][2] + epilines2[i][0] * img2.cols) / epilines2[i][1]),
+             color);
+    cv::circle(outImg(rect2), points2[i], 3, color, -1, cv::LINE_AA);
+  }
+
+  return outImg;
+}
+
 
 void DrawEpipolarLines(const std::string &title, const cv::Mat F,
                               const cv::Mat &img1, const cv::Mat &img2,
@@ -313,7 +370,8 @@ std::vector<std::vector<double>> MatchSampson(std::vector<cv::KeyPoint> vkps1, s
                                                cv::Mat dsc1, cv::Mat dsc2,
                                                cv::Mat F,
                                                float lx, float ly, cv::Point3f co2,
-                                               float th, bool bCrossVerification, bool bDraw) {
+                                               float th, bool bCrossVerification, 
+                                               bool bDraw, bool bFiltered) {
   // Get Points from KeyPoints
   std::vector<cv::Point2f> kpoints1, kpoints2;
   for (size_t i = 0; i < vkps1.size(); i++)
@@ -400,7 +458,8 @@ std::vector<std::vector<double>> MatchAngle(std::vector<cv::KeyPoint> vkps1, std
                                              cv::Mat dsc1, cv::Mat dsc2,
                                              cv::Mat F,
                                              float lx, float ly, cv::Point3f co2,
-                                             float th, bool bCrossVerification, bool bDraw) {
+                                             float th, bool bCrossVerification, 
+                                             bool bDraw, bool bFiltered) {
   // Get Points from KeyPoints
   std::vector<cv::Point2f> kpoints1, kpoints2;
   for (size_t i = 0; i < vkps1.size(); i++)
@@ -489,8 +548,7 @@ std::vector<std::vector<double>> MatchAngle(std::vector<cv::KeyPoint> vkps1, std
 std::vector<cv::DMatch> NNCandidates(std::vector<std::vector<double>> candidates, double th) {
   std::vector<cv::DMatch> nn;
 
-  for (size_t i = 0; i < candidates.size(); i++)
-  {
+  for (size_t i = 0; i < candidates.size(); i++) {
     int idx_i = -1;
     double dist_i = 1000000.;
 

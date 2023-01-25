@@ -22,9 +22,7 @@ using namespace am;
 
 int main() {
   bool bDraw = false;
-  float th_alpha = DegToRad(1.0);
-  float th_sampson = 10.;
-  double th_sift = 100.0;
+
 
   std::cout << " 1. Loading parameters from cams.json" << std::endl;
 
@@ -105,16 +103,71 @@ int main() {
 
   // Compute F and epilines
   std::vector<cv::Point2f> points1, points2;
-  for (unsigned int i = 0; i < matches_knn.size(); i++) {
-    points1.push_back(kps1[matches_knn[i].queryIdx].pt);
-    points2.push_back(kps2[matches_knn[i].trainIdx].pt);
+  for (unsigned int i = 0; i < matches.size(); i++) {
+    points1.push_back(kps1[matches[i].queryIdx].pt);
+    points2.push_back(kps2[matches[i].trainIdx].pt);
   }
   cv::Mat F12 = cv::findFundamentalMat(points1, points2);
 
   //DrawEpipolarLines("epip1",F12,im1,im2,points1,points2);
   //cv::waitKey(0);
   
+
+
+
+  /*
+
+  std::cout << " Compare epiline drawing" << std::endl;
+  // Get Points from KeyPoints
+  std::vector<cv::Point2f> kpoints1, kpoints2;
+  for (size_t i = 0; i < kps1.size(); i++)
+    kpoints1.push_back(kps1[i].pt);
+  for (size_t i = 0; i < kps2.size(); i++)
+    kpoints2.push_back(kps2[i].pt);
+
+  // Compute epilines with given F
+  std::vector<cv::Vec3f> gmlines1, gmlines2;
+  cv::computeCorrespondEpilines(kpoints1, 1, F12, gmlines1);
+  cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
+
+  std::cout << "Man " << gmlines1[0][0] << " " << gmlines1[0][1] << " " << gmlines1[0][2] << std::endl;
+
+  std::vector<cv::Vec3f> gmline;
+  gmline.push_back(gmlines1[0]);
+
+  float lx = 2*im1.cols; //2*cam.Cx();
+  float ly = 2*im1.rows; //cam.Cy();
+
+  // Manually draw line
+  cv::Point3f pt0(0, -gmlines1[0][2] / gmlines1[0][1], 0.);
+  cv::Point3f pt1(lx, -(gmlines1[0][2] + gmlines1[0][0] * lx) / gmlines1[0][1], 0.);
+  cv::Point3f pt2(im1.cols, -(gmlines1[0][2] + gmlines1[0][0] * im1.cols) / gmlines1[0][1], 0.);
+  cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
+
+  //cv::Point(        0, -epilines1[i][2] / epilines1[i][1]),
+  //cv::Point(img1.cols, -(epilines1[i][2] + epilines1[i][0] * img1.cols) / epilines1[i][1]),
+
+
+  std::vector<cv::Point2f> skp1, skp2;
+  skp1.push_back(kpoints1[0]);
+  skp2.push_back(kpoints2[0]);
+  cv::Mat im_epi = CompareEpipolarLines("epip1",F12,im1,im2,skp1,skp2);
+
+  std::cout << " abc" << std::endl;
+
+  cv::line(im_epi, cv::Point2f(im1.cols + pt0.x, pt0.y), cv::Point2f(im1.cols + pt1.x, pt1.y), cv::Scalar(0, 0, 255), 2);
+  cv::line(im_epi, cv::Point2f(im1.cols + pt0.x, pt0.y), cv::Point2f(im1.cols + pt2.x, pt2.y), cv::Scalar(0, 255, 0), 2);
+
+  std::cout << "def" << std::endl;
+
+  ResizeAndDisplay("abc", im_epi, 0.5);
+  cv::waitKey(0);
+
   return 0;
+
+  */
+
+
 
 
 
@@ -123,16 +176,31 @@ int main() {
 
 
   std::cout << " 6. Compute matches by distance and angle" << std::endl;
-  float lx = im1.cols;
-  float ly = im1.rows;
+  //float lx = im1.cols;
+  //float ly = im1.rows;
+
+  float th_alpha = DegToRad(1.0);
+  float th_sampson = 10.;
+  double th_sift = 100.0;
 
   // Match by distance threshold
-  std::vector<std::vector<double>> matches_sampson_all = MatchSampson(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_sampson, false);
+  std::vector<std::vector<double>> matches_sampson_all = MatchSampson(kps1, kps2, desc1, desc2, F12, 2*cam.Cx(), 2*cam.Cy(), c2, th_sampson, true, false);
   std::vector<cv::DMatch> matches_sampson = NNCandidates(matches_sampson_all, th_sift);
 
+  
   // Match by angle threshold
-  std::vector<std::vector<double>> matches_angle_all = MatchAngle(kps1, kps2, desc1, desc2, F12, lx, ly, c2, th_alpha, true, false);
+  std::vector<std::vector<double>> matches_angle_all = MatchAngle(kps1, kps2, desc1, desc2, F12, 2*cam.Cx(), 2*cam.Cy(), c2, th_alpha, true, false);
   std::vector<cv::DMatch> matches_angle = NNCandidates(matches_angle_all, th_sift);
+
+  // Match by distance threshold
+  std::cout << " 6.1. Sampson all/nn: " << matches_sampson_all.size() << " / " << matches_sampson.size() << std::endl;
+  std::cout << " 6.2. Angle all/nn:   " << matches_angle_all.size()   << " / " << matches_angle.size() << std::endl;
+
+
+
+  return 0;
+
+
 
 
 

@@ -15,6 +15,12 @@ namespace am {
 
 
 
+cv::Mat CompareEpipolarLines(const std::string &title, const cv::Mat F,
+                              const cv::Mat &img1, const cv::Mat &img2,
+                              const std::vector<cv::Point2f> points1, const std::vector<cv::Point2f> points2,
+                              const float inlierDistance = -1);
+
+
 void DrawEpipolarLines(const std::string &title, const cv::Mat F,
                               const cv::Mat &img1, const cv::Mat &img2,
                               const std::vector<cv::Point2f> points1, const std::vector<cv::Point2f> points2,
@@ -72,14 +78,16 @@ std::vector<std::vector<double>> MatchSampson(std::vector<cv::KeyPoint> vkps1, s
                                                cv::Mat dsc1, cv::Mat dsc2,
                                                cv::Mat F,
                                                float lx, float ly, cv::Point3f co2,
-                                               float th, bool bCrossVerification = false, bool bDraw = false);
+                                               float th, bool bCrossVerification = false, 
+                                               bool bDraw = false, bool bFiltered = false);
 
 
 std::vector<std::vector<double>> MatchAngle(std::vector<cv::KeyPoint> vkps1, std::vector<cv::KeyPoint> vkps2,
                                              cv::Mat dsc1, cv::Mat dsc2,
                                              cv::Mat F,
                                              float lx, float ly, cv::Point3f co2,
-                                             float th, bool bCrossVerification = false, bool bDraw = false);
+                                             float th, bool bCrossVerification = false, 
+                                             bool bDraw = false, bool bFiltered = false);
 
 
 

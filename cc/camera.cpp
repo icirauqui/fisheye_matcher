@@ -48,3 +48,10 @@ cv::Mat Camera::K() { return K_.clone(); }
 
 
 cv::Vec4f Camera::D() { return D_; }
+
+
+
+float Camera::Cx() { return cx; }
+
+
+float Camera::Cy() { return cy; }

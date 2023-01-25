@@ -25,6 +25,11 @@ public:
 
   cv::Vec4f D();
 
+  float Cx();
+
+  float Cy();
+
+
 private:
 
   std::string path_;
