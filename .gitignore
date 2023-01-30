@@ -34,3 +34,5 @@
 # Build folder
 build/
 
+# Ignore bazel symbolic links
+bazel-*
