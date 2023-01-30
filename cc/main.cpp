@@ -186,26 +186,44 @@ int main() {
   // Match by distance threshold
   std::vector<std::vector<double>> matches_sampson_all = MatchSampson(kps1, kps2, desc1, desc2, F12, 2*cam.Cx(), 2*cam.Cy(), c2, th_sampson, true, false);
   std::vector<cv::DMatch> matches_sampson = NNCandidates(matches_sampson_all, th_sift);
-
+  std::cout << " 6.1. Sampson all/nn: " << matches_sampson_all.size() << " / " << matches_sampson.size() << std::endl;
+  //for (auto m : matches_sampson){
+  //  std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
+  //}
+  
+  
+  
   
   // Match by angle threshold
   std::vector<std::vector<double>> matches_angle_all = MatchAngle(kps1, kps2, desc1, desc2, F12, 2*cam.Cx(), 2*cam.Cy(), c2, th_alpha, true, false);
   std::vector<cv::DMatch> matches_angle = NNCandidates(matches_angle_all, th_sift);
-
-  // Match by distance threshold
-  std::cout << " 6.1. Sampson all/nn: " << matches_sampson_all.size() << " / " << matches_sampson.size() << std::endl;
   std::cout << " 6.2. Angle all/nn:   " << matches_angle_all.size()   << " / " << matches_angle.size() << std::endl;
+  //for (auto m : matches_angle){
+  //  std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
+  //}
 
 
 
-  return 0;
+  std::cout << " 6.3. Compare matches" << std::endl;
+
+  cv::Mat imout_matches_segregation = CompareMatches(
+    im1, im2, 
+    kps1, kps2,
+    matches_sampson, matches_angle, 
+    1);
+
+  ResizeAndDisplay("Matches Segregation", imout_matches_segregation, 0.5);
+
+
+
+  // For 
 
 
 
 
 
 
-
+/*
 
   std::cout << " 7. Draw ressults" << std::endl;
 
@@ -227,7 +245,7 @@ int main() {
   // HistogramDMatch("Matches Sampson",matches_sampson,th_sift,10);
   // HistogramDMatch("Matches Angle  ",matches_angle,th_sift,10);
 
-
+*/
 
 
   cv::waitKey(0);

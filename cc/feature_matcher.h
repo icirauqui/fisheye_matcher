@@ -22,5 +22,15 @@ std::vector<cv::DMatch> MatchFLANN(const cv::Mat &descriptors1, const cv::Mat &d
 
 std::vector<cv::DMatch> MatchBF(const cv::Mat &descriptors1, const cv::Mat &descriptors2, bool crossCheck = false);
 
+cv::Mat CompareMatches(cv::Mat &im1, cv::Mat &im2, 
+                       std::vector<cv::KeyPoint> &kps1, std::vector<cv::KeyPoint> &kps2,
+                       const std::vector<cv::DMatch> &matches1, const std::vector<cv::DMatch> &matches2, 
+                       int report_level = 0);
+
+cv::Mat CompareMatchMethod(cv::Mat &im1, cv::Mat &im2, 
+                           std::vector<cv::KeyPoint> &kps1, std::vector<cv::KeyPoint> &kps2,
+                           const std::vector<cv::DMatch> &matches1, const std::vector<cv::DMatch> &matches2, 
+                           int report_level = 0);
+
 
 #endif

@@ -27,3 +27,10 @@ We present a new implementation for the matching process applying epipolar geome
 5. Compute Fundamental Matrix and epipolar lines.
 6. Guided matching via Sampson distance and angular error thresholding.
 7. Visualization.
+
+
+## Results
+
+By setting the threshold in the angular error, we can filter out the wrong matches.
+
+<img src=".readme/epipolar_result.png" alt="drawing" width="1200"/>
