@@ -37,7 +37,12 @@ int main() {
   cv::Mat im2 = imread("../images/2.png", cv::IMREAD_COLOR);
 
   float f = cam.FocalLength();
+  cv::Point3f c1 = cam.CameraCenter();
   cv::Point3f c2 = cam.CameraCenter();
+
+  
+
+
 
 
 
@@ -45,7 +50,7 @@ int main() {
   std::cout << " 3. Detecting features" << std::endl;
 
   // Detect features (parameters from COLMAP)
-  int max_features = 8192;
+  int max_features = 1000; //8192;
   int num_octaves = 4;
   int octave_resolution = 3;
   float peak_threshold = 0.02 / octave_resolution;  // 0.04
@@ -111,61 +116,20 @@ int main() {
 
   //DrawEpipolarLines("epip1",F12,im1,im2,points1,points2);
   //cv::waitKey(0);
-  
 
 
+  std::cout << " 5.1 Decompose E" << std::endl;
+  cv::Mat Kp = cam.K();
+  Kp.convertTo(Kp, CV_64F);
+  cv::Mat E = EfromF(F12, Kp);
 
-  /*
+  cv::Mat R1, R2, t;
+  cv::decomposeEssentialMat(E, R1, R2, t);
 
-  std::cout << " Compare epiline drawing" << std::endl;
-  // Get Points from KeyPoints
-  std::vector<cv::Point2f> kpoints1, kpoints2;
-  for (size_t i = 0; i < kps1.size(); i++)
-    kpoints1.push_back(kps1[i].pt);
-  for (size_t i = 0; i < kps2.size(); i++)
-    kpoints2.push_back(kps2[i].pt);
+  cv::Mat c1p = -R1.t() * t;
 
-  // Compute epilines with given F
-  std::vector<cv::Vec3f> gmlines1, gmlines2;
-  cv::computeCorrespondEpilines(kpoints1, 1, F12, gmlines1);
-  cv::computeCorrespondEpilines(kpoints2, 2, F12, gmlines2);
-
-  std::cout << "Man " << gmlines1[0][0] << " " << gmlines1[0][1] << " " << gmlines1[0][2] << std::endl;
-
-  std::vector<cv::Vec3f> gmline;
-  gmline.push_back(gmlines1[0]);
-
-  float lx = 2*im1.cols; //2*cam.Cx();
-  float ly = 2*im1.rows; //cam.Cy();
-
-  // Manually draw line
-  cv::Point3f pt0(0, -gmlines1[0][2] / gmlines1[0][1], 0.);
-  cv::Point3f pt1(lx, -(gmlines1[0][2] + gmlines1[0][0] * lx) / gmlines1[0][1], 0.);
-  cv::Point3f pt2(im1.cols, -(gmlines1[0][2] + gmlines1[0][0] * im1.cols) / gmlines1[0][1], 0.);
-  cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
-
-  //cv::Point(        0, -epilines1[i][2] / epilines1[i][1]),
-  //cv::Point(img1.cols, -(epilines1[i][2] + epilines1[i][0] * img1.cols) / epilines1[i][1]),
-
-
-  std::vector<cv::Point2f> skp1, skp2;
-  skp1.push_back(kpoints1[0]);
-  skp2.push_back(kpoints2[0]);
-  cv::Mat im_epi = CompareEpipolarLines("epip1",F12,im1,im2,skp1,skp2);
-
-  std::cout << " abc" << std::endl;
-
-  cv::line(im_epi, cv::Point2f(im1.cols + pt0.x, pt0.y), cv::Point2f(im1.cols + pt1.x, pt1.y), cv::Scalar(0, 0, 255), 2);
-  cv::line(im_epi, cv::Point2f(im1.cols + pt0.x, pt0.y), cv::Point2f(im1.cols + pt2.x, pt2.y), cv::Scalar(0, 255, 0), 2);
-
-  std::cout << "def" << std::endl;
-
-  ResizeAndDisplay("abc", im_epi, 0.5);
-  cv::waitKey(0);
-
-  return 0;
-
-  */
+  cv::Point3f c1g(0.0, 0.0, 0.0);
+  cv::Point3f c2g = c1g + cv::Point3f(t.at<double>(0, 0), t.at<double>(0, 1), t.at<double>(0, 2));
 
 
 
@@ -184,8 +148,9 @@ int main() {
   double th_sift = 100.0;
 
   // Match by distance threshold
-  std::vector<std::vector<double>> matches_sampson_all = MatchSampson(kps1, kps2, desc1, desc2, F12, 2*cam.Cx(), 2*cam.Cy(), c2, th_sampson, true, false);
-  std::vector<cv::DMatch> matches_sampson = NNCandidates(matches_sampson_all, th_sift);
+  AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g);
+  std::vector<std::vector<double>> matches_sampson_all = am.MatchSampson(th_sampson, true, false);
+  std::vector<cv::DMatch> matches_sampson = am.NNCandidates(matches_sampson_all, th_sift);
   std::cout << " 6.1. Sampson all/nn: " << matches_sampson_all.size() << " / " << matches_sampson.size() << std::endl;
   //for (auto m : matches_sampson){
   //  std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
@@ -195,18 +160,45 @@ int main() {
   
   
   // Match by angle threshold
-  std::vector<std::vector<double>> matches_angle_all = MatchAngle(kps1, kps2, desc1, desc2, F12, 2*cam.Cx(), 2*cam.Cy(), c2, th_alpha, true, false);
-  std::vector<cv::DMatch> matches_angle = NNCandidates(matches_angle_all, th_sift);
-  std::cout << " 6.2. Angle all/nn:   " << matches_angle_all.size()   << " / " << matches_angle.size() << std::endl;
+  std::vector<std::vector<double>> matches_angle_all = am.MatchAngle2(th_alpha, true, false);
+  std::vector<cv::DMatch> matches_angle = am.NNCandidates(matches_angle_all, th_sift);
+  std::cout << " 6.2. Angle2 all/nn:   " << matches_angle_all.size()   << " / " << matches_angle.size() << std::endl;
   //for (auto m : matches_angle){
   //  std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
   //}
 
 
 
+
+  // Match by Angle threshold with enhanced function
+  std::vector<std::vector<double>> match_candidates_angle1 = am.MatchAngle2(th_alpha, true, 
+                                                                            false, false);
+  std::cout << " 6.3 Angle all/nn:   " << match_candidates_angle1.size()   << " / " << match_candidates_angle1.size() << std::endl;
+  //for (auto m1 : match_candidates_angle1){
+  //  for (auto m2 : m1) {
+  //    std::cout << m2 << " ";
+  //  }
+  //  std::cout << std::endl;
+  //}
+  //std::cout << "th_alpha: " << th_alpha << std::endl;
+
+
+  return 0;
+  float th_dist_line = 4.0;
+
+  std::vector<std::vector<double>> match_candidates_dist = am.MatchEpilineDist(th_dist_line, true, 
+                                                                               false, false);
+
+
+
+
+
+
   std::cout << " 6.3. Compare matches" << std::endl;
 
-  cv::Mat imout_matches_segregation = CompareMatches(
+  FeatureMatcher fm(im1, im2);
+
+  cv::Mat imout_matches_segregation = fm.CompareMatches(
     im1, im2, 
     kps1, kps2,
     matches_sampson, matches_angle, 
@@ -215,8 +207,20 @@ int main() {
   ResizeAndDisplay("Matches Segregation", imout_matches_segregation, 0.5);
 
 
+  cv::Mat imout_matches_candidates = fm.DrawCandidates(
+    im1, im2, 
+    kps1, kps2,
+    F12,
+    matches_sampson, matches_angle, 
+    1);
 
-  // For 
+
+
+  ResizeAndDisplay("Epipolar compare", imout_matches_candidates, 0.5);
+
+  // For a point matched by Sampson and not by angle
+  // Draw the epipolar line in the second image, and the point
+
 
 
 
@@ -240,10 +244,6 @@ int main() {
   //ResizeAndDisplay("Matches KNN", imout_matches_knn, 0.5);
   //ResizeAndDisplay("Matches Sampson", imout_matches_sampson, 0.5);
   //ResizeAndDisplay("Matches Angle", imout_matches_angle, 0.5);
-
-  // HistogramDMatch("Matches KNN    ",matches_knn,th_sift,10);
-  // HistogramDMatch("Matches Sampson",matches_sampson,th_sift,10);
-  // HistogramDMatch("Matches Angle  ",matches_angle,th_sift,10);
 
 */
 

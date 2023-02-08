@@ -74,30 +74,80 @@ float DistancePointLine(const cv::Point2f point, const cv::Vec3f &line);
 float DistanceSampson(const cv::Point2f &pt1, const cv::Point2f &pt2, cv::Mat F);
 
 
-std::vector<std::vector<double>> MatchSampson(std::vector<cv::KeyPoint> vkps1, std::vector<cv::KeyPoint> vkps2,
-                                               cv::Mat dsc1, cv::Mat dsc2,
-                                               cv::Mat F,
-                                               float lx, float ly, cv::Point3f co2,
-                                               float th, bool bCrossVerification = false, 
-                                               bool bDraw = false, bool bFiltered = false);
+cv::Point3f ptg(cv::Point3f c, cv::Point3f cg, cv::Point2f p, float f);
 
 
-std::vector<std::vector<double>> MatchAngle(std::vector<cv::KeyPoint> vkps1, std::vector<cv::KeyPoint> vkps2,
-                                             cv::Mat dsc1, cv::Mat dsc2,
-                                             cv::Mat F,
-                                             float lx, float ly, cv::Point3f co2,
-                                             float th, bool bCrossVerification = false, 
-                                             bool bDraw = false, bool bFiltered = false);
+void DrawCandidates(cv::Mat im1, cv::Mat im2, cv::Vec3f line, cv::Point2f point, std::vector<cv::Point2f> points, std::string name = "Candidates");
+
+
+class AngMatcher {
+
+public:
+
+  AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoint> vkps2_,
+             cv::Mat dsc1_, cv::Mat dsc2_,
+             cv::Mat F_, cv::Mat &im1_, cv::Mat &im2_,
+             float lx_, float ly_,
+             float fo_,
+             cv::Point3f co1_, cv::Point3f co2_,
+             cv::Point3f co1g_, cv::Point3f co2g_);
+
+  ~AngMatcher();
+
+
+  std::vector<std::vector<double>> Match(std::string method,
+                                         float th, bool bCrossVerification = false, 
+                                         bool bDraw = false, bool bFiltered = false);
+
+
+  // Matches with epipolar line distance and draws the candidates
+  std::vector<std::vector<double>> MatchEpilineDist(float th, bool bCrossVerification = false, 
+                                                    bool bDraw = false, bool bFiltered = false);
 
 
 
-std::vector<cv::DMatch> NNCandidates(std::vector<std::vector<double>> candidates, double th);
+  // Matches with angle thresholding and draws the candidates
+  std::vector<std::vector<double>> MatchAngle(float th, bool bCrossVerification, 
+                                                  bool bDraw, bool bFiltered);
 
 
-void HistogramDMatch(const std::string &title, std::vector<cv::DMatch> matches, int th, int factor);
+  // Matches Sampson distance
+  std::vector<std::vector<double>> MatchSampson(float th, bool bCrossVerification = false, 
+                                                bool bDraw = false, bool bFiltered = false);
+
+  // Matches with angle thresholding
+  std::vector<std::vector<double>> MatchAngle2(float th, bool bCrossVerification = false, 
+                                              bool bDraw = false, bool bFiltered = false);
 
 
-void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor);
+  std::vector<cv::DMatch> NNCandidates(std::vector<std::vector<double>> candidates, 
+                                       double th);
+
+
+private: 
+  std::vector<cv::Point2f> kpoints1, kpoints2;
+  std::vector<cv::KeyPoint> vkps1, vkps2;
+  std::vector<cv::Vec3f> gmlines1, gmlines2;
+  cv::Mat dsc1, dsc2;
+  cv::Mat F;
+  cv::Mat im1, im2;
+  float lx, ly;
+  float fo;
+  cv::Point3f co1, co2;
+  cv::Point3f co1g, co2g;
+
+
+
+
+
+};
+
+
+
+
+
+
+void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor, bool wait = false);
 void ResizeAndDisplay(const std::string &title, const std::vector<cv::Mat> &imgs, float factor);
 
 
