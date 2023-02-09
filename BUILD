@@ -1,17 +1,76 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
-cc_binary(
-    name = "fl_agent",
-    hdrs = ["fl/fl_agent.h"],
-    srcs = ["fl/fl_agent.cpp"],
+
+cc_library(
+    name = "aux",
+    hdrs = ["cc/aux.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "json",
+    hdrs = ["third_party/nlohmann/json.hpp"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "camera",
+    hdrs = ["cc/camera.h"],
+    srcs = ["cc/camera.cpp"],
     deps = [
-        "@arrayfire//:arrayfire",
-        "@oneDNN//:oneDNN",
-        "@flashlight//:flashlight",
+        "@opencv//:opencv",
+        ":aux",
+        ":json",
     ],
+    linkstatic=True,
+    strip_include_prefix = "cc",
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "ang_matcher",
+    hdrs = ["cc/ang_matcher.h"],
+    srcs = ["cc/ang_matcher.cpp"],
+    deps = [
+        "@opencv//:opencv",
+        ":aux",
+    ],
+    linkstatic=True,
+    strip_include_prefix = "cc",
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "feature_matcher",
+    hdrs = ["cc/feature_matcher.h"],
+    srcs = ["cc/feature_matcher.cpp"],
+    deps = [
+        "@opencv//:opencv",
+        ":aux",
+    ],
+    linkstatic=True,
+    strip_include_prefix = "cc",
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "main",
+    srcs = ["cc/main.cpp"],
+    deps = [
+        ":aux",
+        ":json",
+        ":camera",
+        ":ang_matcher",
+        ":feature_matcher",
+        "@opencv//:opencv",
+    ],
+    includes = ["cc"],
     linkstatic=True,
     visibility = ["//visibility:public"],
 )
+
+
+
 
 exports_files(
     [

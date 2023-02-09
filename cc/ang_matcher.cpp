@@ -341,7 +341,7 @@ float DistancePointLine(const cv::Point2f point, const cv::Vec3f &line) {
 }
 
 
-
+// Bad
 float DistanceSampson(const cv::Point2f &pt1, const cv::Point2f &pt2, cv::Mat F) {
   float data1[3] = {pt1.x, pt1.y, 0.};
   float data2[3] = {pt2.x, pt2.y, 0.};
@@ -398,13 +398,81 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2, cv::Vec3f line, cv::Point2f point,
 
 
 
+cv::Point3f ConvertToWorldCoords(cv::Point2f &p, cv::Mat &R, cv::Mat t, cv::Mat &K) {  
+  // Point to homogeneous
+  cv::Mat p_hom = (cv::Mat_<float>(3, 1) << p.x, p.y, 1);
+
+  // Normalize point
+  cv::Mat p_norm = K.inv() * p_hom;
+  p_norm.convertTo(p_norm, R.type());
+
+  // Convert to world coordinates
+  cv::Mat p_world = R * p_norm + t;  
+  p_world.convertTo(p_world, 5);
+
+  return cv::Point3f(p_world.at<float>(0), p_world.at<float>(1), p_world.at<float>(2));
+}
+
+
+
+int CountPositive(const std::vector<std::vector<double>> &v) {
+  int count = 0;
+  for (size_t i = 0; i < v.size(); i++) {
+    for (size_t j = 0; j < v[i].size(); j++) {
+      if (v[i][j] > 0.0) {
+        count++;
+      }
+    }
+  }
+  return count;
+}
+
+
+
+void PrintPairs(std::vector<cv::DMatch> matches) {
+  for (auto m : matches){
+    std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
+  }
+}
+
+
+
+std::vector<double> flatten(std::vector<std::vector<double>> &v) {
+  std::vector<double> flat;
+  for (size_t i = 0; i < v.size(); i++)
+    for (size_t j = 0; j < v[i].size(); j++)
+      flat.push_back(v[i][j]);
+  return flat;
+}
+
+void indices_from_flatten_position(int &i, int &j, int pos, int cols) {
+  i = pos / cols;
+  j = pos % cols;
+}
+
+std::vector<int> ordered_indices(const std::vector<double> &v) {
+  std::vector<int> index(v.size());
+  std::iota(index.begin(), index.end(), 0);
+  std::sort(index.begin(), index.end(),
+            [&v](int i, int j) { return v[i] < v[j]; });
+  return index;
+}
+
+
+
+
+
+
 AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoint> vkps2_,
                        cv::Mat dsc1_, cv::Mat dsc2_,
                        cv::Mat F_, cv::Mat &im1_, cv::Mat &im2_,
                        float lx_, float ly_, 
                        float fo_,
                        cv::Point3f co1_, cv::Point3f co2_,
-                       cv::Point3f co1g_, cv::Point3f co2g_) {
+                       cv::Point3f co1g_, cv::Point3f co2g_,
+                       cv::Mat R1_, cv::Mat R2_,
+                       cv::Mat t_,
+                       cv::Mat K_) {
   vkps1 = vkps1_;
   vkps2 = vkps2_;
   dsc1 = dsc1_;
@@ -419,6 +487,10 @@ AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoin
   co2 = co2_;
   co1g = co1g_;
   co2g = co2g_;
+  R1 = R1_;
+  R2 = R2_;
+  t = t_;
+  K = K_;
 
   // Get Points from KeyPoints
   for (size_t i = 0; i < vkps1.size(); i++)
@@ -444,15 +516,22 @@ std::vector<std::vector<double>> AngMatcher::Match(std::string method,
   std::vector<std::vector<double>> candidates;
   if (method == "epiline")
     candidates = MatchEpilineDist(th, bCrossVerification, bDraw, bFiltered);
-  else if (method == "angle")
-    candidates = MatchAngle(th, bCrossVerification, bDraw, bFiltered);
+  else if (method == "angle3d")
+    candidates = MatchAngle3D(th, bCrossVerification, bDraw, bFiltered);
   else if (method == "sampson")
     candidates = MatchSampson(th, bCrossVerification, bDraw, bFiltered);
-  else if (method == "angle2")
-    candidates = MatchAngle2(th, bCrossVerification, bDraw, bFiltered);
+  else if (method == "angle2d")
+    candidates = MatchAngle2D(th, bCrossVerification, bDraw, bFiltered);
+  else 
+    std::cout << "Match method doesn't exist" << std::endl;
 
   return candidates;
 }
+
+
+
+
+
 
 
 std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCrossVerification, 
@@ -497,7 +576,7 @@ std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCr
       }
     }
 
-    if (points.size() > 0) {
+    if (points.size() > 0 && bDraw) {
       std::string name = "Epiline " + std::to_string(i + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
       DrawCandidates(im1, im2, line, kpoints1[i], points, name);
     }
@@ -517,7 +596,7 @@ std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCr
 
 
 
-std::vector<std::vector<double>> AngMatcher::MatchAngle(float th, bool bCrossVerification, 
+std::vector<std::vector<double>> AngMatcher::MatchAngle3D(float th, bool bCrossVerification, 
                                                         bool bDraw, bool bFiltered) {
 
 
@@ -525,48 +604,94 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle(float th, bool bCrossVer
   // Look for match candidates
   std::vector<std::vector<double>> candidates = std::vector<std::vector<double>>(vkps1.size(), std::vector<double>(vkps2.size(), -1.));
 
+
+
   for (size_t i = 0; i < vkps1.size(); i++) {
-    cv::Point3f p1g = ptg(co1, co1g, kpoints1[i], fo);
+    //cv::Point3f p1g = ptg(co1, co1g, kpoints1[i], fo);
+
+    std::vector<cv::Point2f> points;
+
+    cv::Mat o = cv::Mat::zeros(3,1,t.type());
+    cv::Point3f p1g = ConvertToWorldCoords(kpoints1[i], R1, o, K);
+
+    // Epipolar line in image 2: 
+    // correct would be to compute the intersection between the plane and the camera 2 plane
+    cv::Point3f pt0(0, -gmlines1[i][2] / gmlines1[i][1], 0.);
+    cv::Point3f pt1(lx, -(gmlines1[i][2] + gmlines1[i][0] * lx) / gmlines1[i][1], 0.);
+    cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
 
     cv::Vec4f pi = EquationPlane(co1g, co2g, p1g);
 
+
     for (size_t j = 0; j < vkps2.size(); j++) {
-      cv::Point3f p2g = ptg(co2, co2g, kpoints2[j], fo);
+      cv::Point3f p2g = ConvertToWorldCoords(kpoints2[j], R2, t, K);
       cv::Vec3f v2g(p2g.x - co2g.x, p2g.y - co2g.y, p2g.z - co2g.z);
 
       float a12 = AngleLinePlane(pi, v2g);
       if (a12 <= th) {
-        std::cout << " i " << i << " j " << j << " a12 " << a12 << " th " << th << std::endl;
-        candidates[i][j] = a12;
-
-        /*
+        //candidates[i][j] = a12;
 
         // Cross verification with image 1
-        cv::Point3f im1pt0(0, -gmlines2[j][2] / gmlines2[j][1], 0.);
-        cv::Point3f im1pt1(lx, -(gmlines2[j][2] + gmlines2[j][0] * lx) / gmlines2[j][1], 0.);
-        cv::Vec4f im1pi = EquationPlane(im1pt0, im1pt1, co2);
+        cv::Vec4f pi2 = EquationPlane(co1g, co2g, p2g);
+        cv::Vec3f v1g(p1g.x - co1g.x, p1g.y - co1g.y, p1g.z - co1g.z);
 
-        cv::Vec3f im1kp(kpoints1[i].x, kpoints1[i].y, 0.);
-        cv::Vec3f im1v(im1kp(0) - co2.x, im1kp(1) - co2.y, im1kp(2) - co2.z);
-
-        if (AngleLinePlane(im1pi, im1v) <= th || !bCrossVerification)
-        {
-          double dist_l2 = 0.;
-          if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
-            dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
-          candidates[i][j] = dist_l2;
+        float a21 = AngleLinePlane(pi2, v1g);
+        if (a21 <= th) {
+          candidates[i][j] = a12 + a21;
+          points.push_back(kpoints2[j]);
         }
-
-        // double dist_l2 = 0.;
-        // if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
-        //     dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
-        // candidates[i][j] = dist_l2;
-
-        */
       }
     }
 
+    /*
+    if (bDraw) {
+      cv::viz::Viz3d myWindow("Coordinate Frame");
+
+      // Coordinate system
+      myWindow.showWidget("Coordinate Widget", cv::viz::WCoordinateSystem(200));
+
+      // Camera frame
+      std::vector<cv::Point3f> camFr = {cv::Point3f(0., ly, 0.), cv::Point3f(lx, ly, 0.), cv::Point3f(lx, 0., 0.), cv::Point3f(0., 0., 0.), cv::Point3f(0., ly, 0.)};
+      cv::viz::WPolyLine camFrPoly(camFr, cv::viz::Color::gray());
+      myWindow.showWidget("camFrPoly", camFrPoly);
+
+      // Epiplane
+      cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
+      std::vector<cv::Point3f> lineFr = FrustumLine(line, lx, ly);
+      lineFr.push_back(co2);
+      lineFr.push_back(lineFr[0]);
+      cv::viz::WPolyLine epiplane(lineFr, cv::viz::Color::green());
+      myWindow.showWidget("epiplane", epiplane);
+
+      // Candidate points projective rays
+      for (size_t j = 0; j < candidates[i].size(); j++) {
+        if (candidates[i][j] >= 0.) {
+          cv::Point3f kp(kpoints2[j].x, kpoints2[j].y, 0.);
+          cv::viz::WLine ptLine(co2, kp, cv::viz::Color::red());
+          myWindow.showWidget("ptLine" + j, ptLine);
+        }
+      }
+      if (bFound)
+        myWindow.spin();
+    }
+    */
+
+    
+    if (points.size() > 0 && bDraw) {
+      std::string name = "Epiline " + std::to_string(i + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
+      DrawCandidates(im1, im2, line, kpoints1[i], points, name);
+    }
   }
+
+  // Num candidates
+  int num_candidates = 0;
+  for (size_t i = 0; i < candidates.size(); i++)
+    for (size_t j = 0; j < candidates[i].size(); j++)
+      if (candidates[i][j] >= 0.)
+        num_candidates++;
+  std::cout << "Num candidates: " << num_candidates << std::endl;
+
+  return candidates;
 }
 
 
@@ -586,15 +711,21 @@ std::vector<std::vector<double>> AngMatcher::MatchSampson(float th, bool bCrossV
     cv::Point3f pt1(lx, -(gmlines1[i][2] + gmlines1[i][0] * lx) / gmlines1[i][1], 0.);
     cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
 
+    cv::Mat point1m(cv::Point3d(vkps1[i].pt.x, vkps1[i].pt.y, 1.0));
+
+    std::vector<cv::Point2f> points;
+
     for (size_t j = 0; j < kpoints2.size(); j++) {
       cv::Point2f kp(kpoints2[j].x, kpoints2[j].y);
 
-      // if (DistancePointLine(kp,line) <= th) {
-      if (DistanceSampson(vkps1[i].pt, kp, F)) {
+      cv::Mat point2m(cv::Point3d(vkps2[j].pt.x, vkps2[j].pt.y, 1.0));
+
+      if (cv::sampsonDistance(point1m, point2m, F) <= th) {
         double dist_l2 = 0.;
         if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
           dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
         candidates[i][j] = dist_l2;
+        points.push_back(kpoints2[j]);
 
         /*
         // Cross verification with image 1
@@ -614,6 +745,7 @@ std::vector<std::vector<double>> AngMatcher::MatchSampson(float th, bool bCrossV
       }
     }
 
+    /*
     if (bDraw) {
       cv::viz::Viz3d myWindow("Coordinate Frame");
 
@@ -643,12 +775,27 @@ std::vector<std::vector<double>> AngMatcher::MatchSampson(float th, bool bCrossV
       }
       myWindow.spin();
     }
+    */
+
+
+    if (points.size() > 0 && bDraw) {
+      std::string name = "Epiline " + std::to_string(i + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
+      DrawCandidates(im1, im2, line, kpoints1[i], points, name);
+    }
   }
+
+  // Num candidates
+  int num_candidates = 0;
+  for (size_t i = 0; i < candidates.size(); i++)
+    for (size_t j = 0; j < candidates[i].size(); j++)
+      if (candidates[i][j] >= 0.)
+        num_candidates++;
+  std::cout << "Num candidates: " << num_candidates << std::endl;
 
   return candidates;
 }
 
-std::vector<std::vector<double>> AngMatcher::MatchAngle2(float th, bool bCrossVerification, 
+std::vector<std::vector<double>> AngMatcher::MatchAngle2D(float th, bool bCrossVerification, 
                                                         bool bDraw, bool bFiltered) {
 
   // Look for match candidates
@@ -713,9 +860,60 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle2(float th, bool bCrossVe
     }
   }
 
+  // Num candidates
+  int num_candidates = 0;
+  for (size_t i = 0; i < candidates.size(); i++)
+    for (size_t j = 0; j < candidates[i].size(); j++)
+      if (candidates[i][j] >= 0.)
+        num_candidates++;
+  std::cout << "Num candidates: " << num_candidates << std::endl;
+
   return candidates;
 }
 
+
+
+
+
+
+std::vector<cv::DMatch> AngMatcher::MatchDescriptors(std::vector<std::vector<double>> candidates, cv::Mat desc1, cv::Mat desc2, double th) {
+  std::vector<std::vector<double>> sift_descriptor_simmilarity;
+
+  for (size_t i = 0; i < candidates.size(); i++) {
+    std::vector<double> row;
+    for (size_t j = 0; j < candidates[i].size(); j++) {
+      if (candidates[i][j] >= 0.) {
+        double dist_l2 = norm(desc1.row(i), desc2.row(j), cv::NORM_L2);
+        row.push_back(dist_l2);
+      } else {
+        row.push_back(-1.);
+      }
+    }
+    sift_descriptor_simmilarity.push_back(row);
+  }
+
+  std::vector<cv::DMatch> nn;
+
+  std::vector<double> flat = flatten(sift_descriptor_simmilarity);
+  std::vector<int> index = ordered_indices(flat);
+
+  for (size_t i = 0; i < index.size(); i++) {
+    int idx_i, idx_j;
+    indices_from_flatten_position(idx_i, idx_j, index[i], sift_descriptor_simmilarity[0].size());
+    double dist_ij = sift_descriptor_simmilarity[idx_i][idx_j];
+    if (dist_ij > 0.0 && dist_ij < th) {
+      //std::cout << "dist_[" << idx_i << "-" << idx_j << "] = " << dist_ij << " of " << th << std::endl;
+      nn.push_back(cv::DMatch(idx_i, idx_j, dist_ij));
+      for (size_t k = 0; k < sift_descriptor_simmilarity.size(); k++)
+        sift_descriptor_simmilarity[k][idx_j] = -1.;
+      for (size_t k = 0; k < sift_descriptor_simmilarity[idx_i].size(); k++)
+        sift_descriptor_simmilarity[idx_i][k] = -1.;
+    }
+  }
+
+  //std::cout << nn.size() << " matches" << std::endl;
+  return nn;
+}
 
 
 
@@ -768,6 +966,57 @@ std::vector<cv::DMatch> AngMatcher::NNCandidates(std::vector<std::vector<double>
 
 
 
+std::vector<cv::DMatch> AngMatcher::NNCandidates2(std::vector<std::vector<double>> candidates, double th) {
+  std::vector<cv::DMatch> nn;
+
+  std::vector<double> flat = flatten(candidates);
+  std::vector<int> index = ordered_indices(flat);
+
+  for (size_t i = 0; i < index.size(); i++) {
+    int idx_i, idx_j;
+    indices_from_flatten_position(idx_i, idx_j, index[i], candidates[0].size());
+
+    if (candidates[idx_i][idx_j] >= 0.) {
+      double dist_i = candidates[idx_i][idx_j];
+      candidates[idx_i][idx_j] = -1.;
+
+      int idx_j2 = -1;
+      double dist_j2 = -1000000.;
+
+      for (size_t j = 0; j < candidates.size(); j++) {
+        if (candidates[j][idx_j] >= 0. && candidates[j][idx_j] < dist_j2) {
+          dist_j2 = candidates[j][idx_j];
+          idx_j2 = j;
+        }
+      }
+
+      if (idx_j2 == idx_i) {
+        cv::DMatch m(idx_i, idx_j, dist_i);
+        nn.push_back(m);
+      }
+    }
+  }
+
+  return nn;
+}
+
+
+void AngMatcher::View(std::vector<std::vector<double>> candidates, int kp, std::string cust_name) {
+  cv::Point3f pt0(0, -gmlines1[kp][2] / gmlines1[kp][1], 0.);
+  cv::Point3f pt1(lx, -(gmlines1[kp][2] + gmlines1[kp][0] * lx) / gmlines1[kp][1], 0.);
+  cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
+
+  std::vector<cv::Point2f> points;
+  for (size_t i = 0; i < candidates[kp].size(); i++) {
+    if (candidates[kp][i] > 0.0) {
+      cv::Point2f pt(kpoints2[i].x, kpoints2[i].y);
+      points.push_back(pt);
+    }
+  }
+
+  std::string name = cust_name + " " + std::to_string(kp + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
+  DrawCandidates(im1, im2, line, kpoints1[kp], points, name);
+}
 
 
 

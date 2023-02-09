@@ -21,7 +21,10 @@ cmake(
         "BUILD_SHARED_LIBS": "OFF",
         "BUILD_opencv_world": "ON",
         "OPENCV_EXTRA_MODULES_PATH": "$$EXT_BUILD_ROOT$$/external/opencv_contrib/modules",
+        "WITH_QT": "OFF",
     },
     lib_source = ":srcs",
-    out_static_libs = ["libopencv_world.a"],
+    #out_static_libs = ["libopencv_world.a"],
+    out_include_dir = "include/opencv4",
+    visibility = ["//visibility:public"],
 )

@@ -3,6 +3,9 @@
 
 
 #include <iostream>
+#include <vector>
+#include <algorithm>
+#include <numeric>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
@@ -10,6 +13,8 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz.hpp>
+
+
 
 namespace am {
 
@@ -80,6 +85,22 @@ cv::Point3f ptg(cv::Point3f c, cv::Point3f cg, cv::Point2f p, float f);
 void DrawCandidates(cv::Mat im1, cv::Mat im2, cv::Vec3f line, cv::Point2f point, std::vector<cv::Point2f> points, std::string name = "Candidates");
 
 
+cv::Point3f ConvertToWorldCoords(cv::Point2f &p, cv::Mat &R, cv::Mat t, cv::Mat &K);
+
+
+int CountPositive(const std::vector<std::vector<double>> &v);
+
+
+void PrintPairs(std::vector<cv::DMatch> matches);
+
+
+std::vector<double> flatten(std::vector<std::vector<double>> &v);
+
+void indices_from_flatten_position(int &i, int &j, int pos, int cols);
+
+std::vector<int> ordered_indices(const std::vector<double> &v);
+
+
 class AngMatcher {
 
 public:
@@ -90,7 +111,10 @@ public:
              float lx_, float ly_,
              float fo_,
              cv::Point3f co1_, cv::Point3f co2_,
-             cv::Point3f co1g_, cv::Point3f co2g_);
+             cv::Point3f co1g_, cv::Point3f co2g_,
+             cv::Mat R1_, cv::Mat R2_,
+             cv::Mat t_,
+             cv::Mat K_);
 
   ~AngMatcher();
 
@@ -107,7 +131,7 @@ public:
 
 
   // Matches with angle thresholding and draws the candidates
-  std::vector<std::vector<double>> MatchAngle(float th, bool bCrossVerification, 
+  std::vector<std::vector<double>> MatchAngle3D(float th, bool bCrossVerification, 
                                                   bool bDraw, bool bFiltered);
 
 
@@ -116,12 +140,19 @@ public:
                                                 bool bDraw = false, bool bFiltered = false);
 
   // Matches with angle thresholding
-  std::vector<std::vector<double>> MatchAngle2(float th, bool bCrossVerification = false, 
+  std::vector<std::vector<double>> MatchAngle2D(float th, bool bCrossVerification = false, 
                                               bool bDraw = false, bool bFiltered = false);
 
 
-  std::vector<cv::DMatch> NNCandidates(std::vector<std::vector<double>> candidates, 
-                                       double th);
+  std::vector<cv::DMatch> MatchDescriptors(std::vector<std::vector<double>> candidates, cv::Mat desc1, cv::Mat desc2, double th);
+
+  std::vector<cv::DMatch> NNCandidates(std::vector<std::vector<double>> candidates, double th);
+
+  std::vector<cv::DMatch> NNCandidates2(std::vector<std::vector<double>> candidates, double th);
+
+
+
+  void View(std::vector<std::vector<double>> candidates, int kp, std::string cust_name = "View");
 
 
 private: 
@@ -135,6 +166,9 @@ private:
   float fo;
   cv::Point3f co1, co2;
   cv::Point3f co1g, co2g;
+  cv::Mat R1, R2;
+  cv::Mat t;
+  cv::Mat K;
 
 
 
@@ -147,7 +181,7 @@ private:
 
 
 
-void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor, bool wait = false);
+void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor = 1.0, bool wait = false);
 void ResizeAndDisplay(const std::string &title, const std::vector<cv::Mat> &imgs, float factor);
 
 

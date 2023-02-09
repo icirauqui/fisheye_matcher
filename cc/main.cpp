@@ -20,6 +20,32 @@
 using namespace am;
 
 
+void onTrackbar(int, void*) {
+  // Nothing
+}
+
+
+int tr_sampson = 1;
+int tr_angle2d = 1;
+int tr_epiline = 1;
+int tr_angle3d = 1;
+
+void on_tr_sampson(int, void*) {
+
+}
+void on_tr_angle2d(int, void*) {
+
+}
+void on_tr_epiline(int, void*) {
+
+}
+void on_tr_angle3d(int, void*) {
+
+}
+
+
+
+
 int main() {
   bool bDraw = false;
 
@@ -140,68 +166,80 @@ int main() {
 
 
   std::cout << " 6. Compute matches by distance and angle" << std::endl;
-  //float lx = im1.cols;
-  //float ly = im1.rows;
+  std::cout << " 6.1. Sampson original" << std::endl;
+  std::cout << " 6.2. Angle original" << std::endl;
+  std::cout << " 6.3. Epiline new" << std::endl;
+  std::cout << " 6.4. Angle new" << std::endl;
+  
+  float th_sampson = 4.0;
+  float th_angle2d = DegToRad(1.0);
+  float th_epiline = 4.0;
+  float th_angle3d = DegToRad(1.0);
 
-  float th_alpha = DegToRad(1.0);
-  float th_sampson = 10.;
+
+
+  cv::namedWindow("Controls", cv::WINDOW_NORMAL);
+  cv::createTrackbar("Sampson [  1  - 10 ]", "Controls", &tr_sampson, 10, on_tr_sampson);
+  cv::createTrackbar("Angle2d [ 0.1 -  1 ]", "Controls", &tr_angle2d, 10, on_tr_angle2d);
+  cv::createTrackbar("Epiline [  1  - 10 ]", "Controls", &tr_epiline, 10, on_tr_epiline);
+  cv::createTrackbar("Angle3d [ 0.1 -  1 ]", "Controls", &tr_angle3d, 10, on_tr_angle3d);
+
+
   double th_sift = 100.0;
 
   // Match by distance threshold
-  AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g);
-  std::vector<std::vector<double>> matches_sampson_all = am.MatchSampson(th_sampson, true, false);
+  AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, K);
+
+  std::vector<std::vector<double>> matches_sampson_all = am.Match("sampson", th_sampson, true, false, false);
+  std::vector<std::vector<double>> matches_angle2d_all = am.Match("angle2d", th_angle2d, true, false, false);
+  std::vector<std::vector<double>> matches_epiline_all = am.Match("epiline", th_epiline, true, false, false);
+  std::vector<std::vector<double>> matches_angle3d_all = am.Match("angle3d", th_angle3d, true, false, false);
+
+  am.View(matches_sampson_all, CountMaxIdx(matches_sampson_all), "matches_sampson_all");
+  am.View(matches_angle2d_all, CountMaxIdx(matches_angle2d_all), "matches_angle2d_all");
+  am.View(matches_epiline_all, CountMaxIdx(matches_epiline_all), "matches_epiline_all");
+  am.View(matches_angle3d_all, CountMaxIdx(matches_angle3d_all), "matches_angle3d_all");
+
   std::vector<cv::DMatch> matches_sampson = am.NNCandidates(matches_sampson_all, th_sift);
-  std::cout << " 6.1. Sampson all/nn: " << matches_sampson_all.size() << " / " << matches_sampson.size() << std::endl;
-  //for (auto m : matches_sampson){
-  //  std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
-  //}
+  std::vector<cv::DMatch> matches_angle2d = am.NNCandidates(matches_angle2d_all, th_sift);
+  std::vector<cv::DMatch> matches_epiline = am.NNCandidates(matches_epiline_all, th_sift);
+  std::vector<cv::DMatch> matches_angle3d = am.NNCandidates(matches_angle3d_all, th_sift);
+
+  std::vector<cv::DMatch> matches_sampson_desc = am.MatchDescriptors(matches_sampson_all, desc1, desc2, th_sift);
+  std::vector<cv::DMatch> matches_angle2d_desc = am.MatchDescriptors(matches_angle2d_all, desc1, desc2, th_sift);
+  std::vector<cv::DMatch> matches_epiline_desc = am.MatchDescriptors(matches_epiline_all, desc1, desc2, th_sift);
+  std::vector<cv::DMatch> matches_angle3d_desc = am.MatchDescriptors(matches_angle3d_all, desc1, desc2, th_sift);
+
+  std::cout << " 6.1. Sampson all/nn/desc: " << am::CountPositive(matches_sampson_all) << " / " << matches_sampson.size() << " / " << matches_sampson_desc.size() << std::endl;
+  std::cout << " 6.2. Angle2d all/nn/desc: " << am::CountPositive(matches_angle2d_all) << " / " << matches_angle2d.size() << " / " << matches_angle2d_desc.size() << std::endl;
+  std::cout << " 6.3. Epiline all/nn/desc: " << am::CountPositive(matches_epiline_all) << " / " << matches_epiline.size() << " / " << matches_epiline_desc.size() << std::endl;
+  std::cout << " 6.4. Angle3d all/nn/desc: " << am::CountPositive(matches_angle3d_all) << " / " << matches_angle3d.size() << " / " << matches_angle3d_desc.size() << std::endl;
+
+  cv::Mat im_matches_sampson_desc; cv::drawMatches(im1, kps1, im2, kps2, matches_sampson_desc, im_matches_sampson_desc);
+  cv::Mat im_matches_angle2d_desc; cv::drawMatches(im1, kps1, im2, kps2, matches_angle2d_desc, im_matches_angle2d_desc);
+  cv::Mat im_matches_epiline_desc; cv::drawMatches(im1, kps1, im2, kps2, matches_epiline_desc, im_matches_epiline_desc);
+  cv::Mat im_matches_angle3d_desc; cv::drawMatches(im1, kps1, im2, kps2, matches_angle3d_desc, im_matches_angle3d_desc);
+
+  ResizeAndDisplay("matches_sampson_desc", im_matches_sampson_desc, 0.5);
+  ResizeAndDisplay("matches_angle2d_desc", im_matches_angle2d_desc, 0.5);
+  ResizeAndDisplay("matches_epiline_desc", im_matches_epiline_desc, 0.5);
+  ResizeAndDisplay("matches_angle3d_desc", im_matches_angle3d_desc, 0.5);
+
+  cv::waitKey(0);
   
-  
-  
-  
-  // Match by angle threshold
-  std::vector<std::vector<double>> matches_angle_all = am.MatchAngle2(th_alpha, true, false);
-  std::vector<cv::DMatch> matches_angle = am.NNCandidates(matches_angle_all, th_sift);
-  std::cout << " 6.2. Angle2 all/nn:   " << matches_angle_all.size()   << " / " << matches_angle.size() << std::endl;
-  //for (auto m : matches_angle){
-  //  std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
-  //}
 
 
 
 
-  // Match by Angle threshold with enhanced function
-  std::vector<std::vector<double>> match_candidates_angle1 = am.MatchAngle2(th_alpha, true, 
-                                                                            false, false);
-  std::cout << " 6.3 Angle all/nn:   " << match_candidates_angle1.size()   << " / " << match_candidates_angle1.size() << std::endl;
-  //for (auto m1 : match_candidates_angle1){
-  //  for (auto m2 : m1) {
-  //    std::cout << m2 << " ";
-  //  }
-  //  std::cout << std::endl;
-  //}
-  //std::cout << "th_alpha: " << th_alpha << std::endl;
-
-
-  return 0;
-  float th_dist_line = 4.0;
-
-  std::vector<std::vector<double>> match_candidates_dist = am.MatchEpilineDist(th_dist_line, true, 
-                                                                               false, false);
-
-
-
-
-
-
-  std::cout << " 6.3. Compare matches" << std::endl;
+/*
+  std::cout << " 7. Compare matches" << std::endl;
 
   FeatureMatcher fm(im1, im2);
 
   cv::Mat imout_matches_segregation = fm.CompareMatches(
     im1, im2, 
     kps1, kps2,
-    matches_sampson, matches_angle, 
+    matches_sampson, matches_angle2d, 
     1);
 
   ResizeAndDisplay("Matches Segregation", imout_matches_segregation, 0.5);
@@ -211,12 +249,13 @@ int main() {
     im1, im2, 
     kps1, kps2,
     F12,
-    matches_sampson, matches_angle, 
+    matches_sampson, matches_angle2d, 
     1);
 
 
 
   ResizeAndDisplay("Epipolar compare", imout_matches_candidates, 0.5);
+*/
 
   // For a point matched by Sampson and not by angle
   // Draw the epipolar line in the second image, and the point
@@ -229,7 +268,7 @@ int main() {
 
 /*
 
-  std::cout << " 7. Draw ressults" << std::endl;
+  std::cout << " 8. Draw ressults" << std::endl;
 
 
   cv::Mat imout_matches_knn, imout_matches_sampson, imout_matches_angle;
