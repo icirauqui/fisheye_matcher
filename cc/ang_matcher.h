@@ -14,6 +14,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz.hpp>
 
+#include "aux.h"
+
 
 
 namespace am {
@@ -118,11 +120,28 @@ public:
 
   ~AngMatcher();
 
+  void Match(std::string method,
+             float th_geom, float th_desc, 
+             bool bCrossVerification = false, 
+             bool draw_inline = false, bool draw_final = false,
+             bool bFiltered = false);
 
-  std::vector<std::vector<double>> Match(std::string method,
-                                         float th, bool bCrossVerification = false, 
-                                         bool bDraw = false, bool bFiltered = false);
+  std::vector<std::vector<double>> GetMatches(std::string method);
 
+  std::vector<cv::DMatch> GetMatchesNN(std::string method);
+
+  std::vector<cv::DMatch> GetMatchesDesc(std::string method);
+
+  void ViewCandidates(std::vector<std::vector<double>> candidates, int kp, std::string cust_name = "View");
+
+  void ViewMatches(std::string method, std::string cust_name = "View", float scale = 0.5);
+
+
+
+
+
+
+private: 
 
   // Matches with epipolar line distance and draws the candidates
   std::vector<std::vector<double>> MatchEpilineDist(float th, bool bCrossVerification = false, 
@@ -152,10 +171,7 @@ public:
 
 
 
-  void View(std::vector<std::vector<double>> candidates, int kp, std::string cust_name = "View");
-
-
-private: 
+  
   std::vector<cv::Point2f> kpoints1, kpoints2;
   std::vector<cv::KeyPoint> vkps1, vkps2;
   std::vector<cv::Vec3f> gmlines1, gmlines2;
@@ -169,6 +185,16 @@ private:
   cv::Mat R1, R2;
   cv::Mat t;
   cv::Mat K;
+
+
+
+  // Analysis resutls
+  int num_methods_ = 4;
+  std::unordered_map<std::string, int> method_map_ = {{"epiline", 0}, {"sampson", 1}, {"angle2d", 2}, {"angle3d", 3}};
+  std::vector<std::vector<std::vector<double>>> candidates_;
+  std::vector<std::vector<cv::DMatch>> nn_candidates_;
+  std::vector<std::vector<cv::DMatch>> desc_matches_;
+
 
 
 

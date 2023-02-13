@@ -50,14 +50,25 @@ int main() {
   bool bDraw = false;
 
 
-  std::cout << " 1. Loading parameters from cams.json" << std::endl;
+  std::cout << " 1. Loading data" << std::endl; 
+  std::cout << " 1.1 Camera parameters from cams.json" << std::endl;
 
   Camera cam = Camera("../images/cams.json");
   cv::Mat K = cam.K();
   cv::Vec4f D = cam.D();
 
 
-  std::cout << " 2. Loading images" << std::endl;
+  std::cout << " 1.2. Images" << std::endl;
+
+  std::ifstream json_file("../images/images.json");
+  nlohmann::json json_data = nlohmann::json::parse(json_file);
+  nlohmann::json im_control = json_data["control"];
+  if (im_control.empty()) {
+    std::cout << "Unable to load parameters from images.json" << std::endl;
+  } else {
+    std::cout << "  " << im_control["num_pairs"] << " image pairs available" << std::endl;
+  }
+
 
   cv::Mat im1 = imread("../images/1.png", cv::IMREAD_COLOR);
   cv::Mat im2 = imread("../images/2.png", cv::IMREAD_COLOR);
@@ -73,7 +84,7 @@ int main() {
 
 
 
-  std::cout << " 3. Detecting features" << std::endl;
+  std::cout << " 2. Detecting features" << std::endl;
 
   // Detect features (parameters from COLMAP)
   int max_features = 1000; //8192;
@@ -102,7 +113,7 @@ int main() {
 
 
 
-  std::cout << " 4. Matching features" << std::endl;
+  std::cout << " 3. Matching features" << std::endl;
 
   float max_ratio = 0.8f;
   float max_distance = 0.7f;
@@ -120,17 +131,17 @@ int main() {
   std::vector<cv::DMatch> matches_flann_07 = MatchFLANN(desc1, desc2, 0.7f);
   std::vector<cv::DMatch> matches_bf = MatchBF(desc1, desc2, true);
 
-  std::cout << " 4.1. Knn   | 0.7 | 0.8 :\t" << matches_knn_07.size()   << "\t|\t" << matches_knn.size() << std::endl;
-  std::cout << " 4.2. Flann | 0.7 | 0.8 :\t" << bold_on << matches_flann_07.size() << bold_off << "\t|\t" << matches_flann.size() << std::endl;
-  std::cout << " 4.3. BF                :\t" << matches_bf.size()       << "\t|\t" << std::endl;
+  std::cout << " 3.1. Knn   | 0.7 | 0.8 :\t" << matches_knn_07.size()   << "\t|\t" << matches_knn.size() << std::endl;
+  std::cout << " 3.2. Flann | 0.7 | 0.8 :\t" << bold_on << matches_flann_07.size() << bold_off << "\t|\t" << matches_flann.size() << std::endl;
+  std::cout << " 3.3. BF                :\t" << matches_bf.size()       << "\t|\t" << std::endl;
 
-  // Select the matches to use
+  // Select the matches to use (COLMAP defaults)
   std::vector<cv::DMatch> matches = matches_flann_07;
 
 
 
 
-  std::cout << " 5. Compute F and epilines" << std::endl;
+  std::cout << " 4. Compute F and epilines" << std::endl;
 
   // Compute F and epilines
   std::vector<cv::Point2f> points1, points2;
@@ -144,7 +155,7 @@ int main() {
   //cv::waitKey(0);
 
 
-  std::cout << " 5.1 Decompose E" << std::endl;
+  std::cout << " 4.1 Decompose E" << std::endl;
   cv::Mat Kp = cam.K();
   Kp.convertTo(Kp, CV_64F);
   cv::Mat E = EfromF(F12, Kp);
@@ -165,24 +176,18 @@ int main() {
 
 
 
-  std::cout << " 6. Compute matches by distance and angle" << std::endl;
-  std::cout << " 6.1. Sampson original" << std::endl;
-  std::cout << " 6.2. Angle original" << std::endl;
-  std::cout << " 6.3. Epiline new" << std::endl;
-  std::cout << " 6.4. Angle new" << std::endl;
+  std::cout << " 5. Compute matches by distance and angle" << std::endl;
   
+  float th_epiline = 4.0;
   float th_sampson = 4.0;
   float th_angle2d = DegToRad(1.0);
-  float th_epiline = 4.0;
   float th_angle3d = DegToRad(1.0);
 
-
-
-  cv::namedWindow("Controls", cv::WINDOW_NORMAL);
-  cv::createTrackbar("Sampson [  1  - 10 ]", "Controls", &tr_sampson, 10, on_tr_sampson);
-  cv::createTrackbar("Angle2d [ 0.1 -  1 ]", "Controls", &tr_angle2d, 10, on_tr_angle2d);
-  cv::createTrackbar("Epiline [  1  - 10 ]", "Controls", &tr_epiline, 10, on_tr_epiline);
-  cv::createTrackbar("Angle3d [ 0.1 -  1 ]", "Controls", &tr_angle3d, 10, on_tr_angle3d);
+  //cv::namedWindow("Controls", cv::WINDOW_NORMAL);
+  //cv::createTrackbar("Sampson [  1  - 10 ]", "Controls", &tr_sampson, 10, on_tr_sampson);
+  //cv::createTrackbar("Angle2d [ 0.1 -  1 ]", "Controls", &tr_angle2d, 10, on_tr_angle2d);
+  //cv::createTrackbar("Epiline [  1  - 10 ]", "Controls", &tr_epiline, 10, on_tr_epiline);
+  //cv::createTrackbar("Angle3d [ 0.1 -  1 ]", "Controls", &tr_angle3d, 10, on_tr_angle3d);
 
 
   double th_sift = 100.0;
@@ -190,43 +195,12 @@ int main() {
   // Match by distance threshold
   AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, K);
 
-  std::vector<std::vector<double>> matches_sampson_all = am.Match("sampson", th_sampson, true, false, false);
-  std::vector<std::vector<double>> matches_angle2d_all = am.Match("angle2d", th_angle2d, true, false, false);
-  std::vector<std::vector<double>> matches_epiline_all = am.Match("epiline", th_epiline, true, false, false);
-  std::vector<std::vector<double>> matches_angle3d_all = am.Match("angle3d", th_angle3d, true, false, false);
+  am.Match("epiline", th_epiline, th_sift, true, false, false, false);
+  am.Match("sampson", th_sampson, th_sift, true, false, false, false);
+  am.Match("angle2d", th_angle2d, th_sift, true, false, false, false);
+  am.Match("angle3d", th_angle3d, th_sift, true, false, false, false);
 
-  am.View(matches_sampson_all, CountMaxIdx(matches_sampson_all), "matches_sampson_all");
-  am.View(matches_angle2d_all, CountMaxIdx(matches_angle2d_all), "matches_angle2d_all");
-  am.View(matches_epiline_all, CountMaxIdx(matches_epiline_all), "matches_epiline_all");
-  am.View(matches_angle3d_all, CountMaxIdx(matches_angle3d_all), "matches_angle3d_all");
-
-  std::vector<cv::DMatch> matches_sampson = am.NNCandidates(matches_sampson_all, th_sift);
-  std::vector<cv::DMatch> matches_angle2d = am.NNCandidates(matches_angle2d_all, th_sift);
-  std::vector<cv::DMatch> matches_epiline = am.NNCandidates(matches_epiline_all, th_sift);
-  std::vector<cv::DMatch> matches_angle3d = am.NNCandidates(matches_angle3d_all, th_sift);
-
-  std::vector<cv::DMatch> matches_sampson_desc = am.MatchDescriptors(matches_sampson_all, desc1, desc2, th_sift);
-  std::vector<cv::DMatch> matches_angle2d_desc = am.MatchDescriptors(matches_angle2d_all, desc1, desc2, th_sift);
-  std::vector<cv::DMatch> matches_epiline_desc = am.MatchDescriptors(matches_epiline_all, desc1, desc2, th_sift);
-  std::vector<cv::DMatch> matches_angle3d_desc = am.MatchDescriptors(matches_angle3d_all, desc1, desc2, th_sift);
-
-  std::cout << " 6.1. Sampson all/nn/desc: " << am::CountPositive(matches_sampson_all) << " / " << matches_sampson.size() << " / " << matches_sampson_desc.size() << std::endl;
-  std::cout << " 6.2. Angle2d all/nn/desc: " << am::CountPositive(matches_angle2d_all) << " / " << matches_angle2d.size() << " / " << matches_angle2d_desc.size() << std::endl;
-  std::cout << " 6.3. Epiline all/nn/desc: " << am::CountPositive(matches_epiline_all) << " / " << matches_epiline.size() << " / " << matches_epiline_desc.size() << std::endl;
-  std::cout << " 6.4. Angle3d all/nn/desc: " << am::CountPositive(matches_angle3d_all) << " / " << matches_angle3d.size() << " / " << matches_angle3d_desc.size() << std::endl;
-
-  cv::Mat im_matches_sampson_desc; cv::drawMatches(im1, kps1, im2, kps2, matches_sampson_desc, im_matches_sampson_desc);
-  cv::Mat im_matches_angle2d_desc; cv::drawMatches(im1, kps1, im2, kps2, matches_angle2d_desc, im_matches_angle2d_desc);
-  cv::Mat im_matches_epiline_desc; cv::drawMatches(im1, kps1, im2, kps2, matches_epiline_desc, im_matches_epiline_desc);
-  cv::Mat im_matches_angle3d_desc; cv::drawMatches(im1, kps1, im2, kps2, matches_angle3d_desc, im_matches_angle3d_desc);
-
-  ResizeAndDisplay("matches_sampson_desc", im_matches_sampson_desc, 0.5);
-  ResizeAndDisplay("matches_angle2d_desc", im_matches_angle2d_desc, 0.5);
-  ResizeAndDisplay("matches_epiline_desc", im_matches_epiline_desc, 0.5);
-  ResizeAndDisplay("matches_angle3d_desc", im_matches_angle3d_desc, 0.5);
-
-  cv::waitKey(0);
-  
+  am.ViewMatches("epiline", "epiline desc matches", 0.5);
 
 
 
@@ -255,7 +229,19 @@ int main() {
 
 
   ResizeAndDisplay("Epipolar compare", imout_matches_candidates, 0.5);
-*/
+
+
+  */
+
+
+
+
+
+
+
+
+
+
 
   // For a point matched by Sampson and not by angle
   // Draw the epipolar line in the second image, and the point

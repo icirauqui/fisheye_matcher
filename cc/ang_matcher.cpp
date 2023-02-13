@@ -210,26 +210,6 @@ std::vector<cv::KeyPoint> KeypointsInContour(std::vector<cv::Point> contour, std
   return kps_tmp;
 }
 
-/*
-std::vector<cv::DMatch> MatchKnn(const cv::Mat &descriptors1, const cv::Mat &descriptors2, float ratio_thresh) {
-  // Match by BF/KNN
-  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-  std::vector<std::vector<cv::DMatch>> matches_knn_all;
-  matcher->knnMatch(descriptors1, descriptors2, matches_knn_all, 2);
-  std::vector<cv::DMatch> matches_knn;
-  for (size_t i = 0; i < matches_knn_all.size(); i++) {
-    if (matches_knn_all[i][0].distance < ratio_thresh * matches_knn_all[i][1].distance) {
-      matches_knn.push_back(matches_knn_all[i][0]);
-    }
-  }
-  return matches_knn;
-}
-*/
-
-
-
-
-
 
 cv::Vec3f EquationLine(cv::Point2f p1, cv::Point2f p2) {
   float dx = p2.x - p1.x;
@@ -501,6 +481,18 @@ AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoin
   // Compute epilines with given F
   cv::computeCorrespondEpilines(kpoints1, 1, F, gmlines1);
   cv::computeCorrespondEpilines(kpoints2, 2, F, gmlines2);
+
+  // Initialize candidates for num_methods_
+  candidates_ = std::vector<std::vector<std::vector<double>>>(num_methods_);
+  nn_candidates_ = std::vector<std::vector<cv::DMatch>>(num_methods_);
+  desc_matches_ = std::vector<std::vector<cv::DMatch>>(num_methods_);
+
+  // Print info
+  std::cout << "    AngMatcher initialized. Guided matching methods:" << std::endl
+            << "      - Epiline distance" << std::endl
+            << "      - Sampson distance" << std::endl
+            << "      - Angle 2D" << std::endl
+            << "      - Angle 3D" << std::endl << std::endl;
 }
 
 
@@ -509,25 +501,85 @@ AngMatcher::~AngMatcher() {
 }
 
 
-std::vector<std::vector<double>> AngMatcher::Match(std::string method,
-                                         float th, bool bCrossVerification, 
-                                         bool bDraw, bool bFiltered) {
 
-  std::vector<std::vector<double>> candidates;
-  if (method == "epiline")
-    candidates = MatchEpilineDist(th, bCrossVerification, bDraw, bFiltered);
-  else if (method == "angle3d")
-    candidates = MatchAngle3D(th, bCrossVerification, bDraw, bFiltered);
-  else if (method == "sampson")
-    candidates = MatchSampson(th, bCrossVerification, bDraw, bFiltered);
-  else if (method == "angle2d")
-    candidates = MatchAngle2D(th, bCrossVerification, bDraw, bFiltered);
-  else 
+
+void AngMatcher::Match(std::string method,
+                       float th_geom, float th_desc,
+                       bool bCrossVerification, 
+                       bool draw_inline, bool draw_final, 
+                       bool bFiltered) {
+
+  if (method == "epiline") {
+    candidates_[method_map_[method]] = MatchEpilineDist(th_geom, bCrossVerification, draw_inline, bFiltered);
+  }
+  else if (method == "sampson") {
+    candidates_[method_map_[method]] = MatchSampson(th_geom, bCrossVerification, draw_inline, bFiltered);
+  }
+  else if (method == "angle2d") {
+    candidates_[method_map_[method]] = MatchAngle2D(th_geom, bCrossVerification, draw_inline, bFiltered);
+  }
+  else if (method == "angle3d") {
+    candidates_[method_map_[method]] = MatchAngle3D(th_geom, bCrossVerification, draw_inline, bFiltered);
+  }
+  else {
     std::cout << "Match method doesn't exist" << std::endl;
+  }
 
-  return candidates;
+  if (draw_final) {
+    ViewCandidates(candidates_[method_map_[method]], CountMaxIdx(candidates_[method_map_[method]]), method);
+  }
+
+  nn_candidates_[method_map_[method]] = NNCandidates(candidates_[method_map_[method]], th_desc);
+
+  desc_matches_[method_map_[method]] = MatchDescriptors(candidates_[method_map_[method]], dsc1, dsc2, th_desc);
+
+  std::cout << " 5." << method_map_[method] + 1 << ". " << method << " all/nn/desc: " 
+            << CountPositive(candidates_[method_map_[method]]) << " / " 
+            << nn_candidates_[method_map_[method]].size() << " / "
+            << desc_matches_[method_map_[method]].size() << std::endl;
 }
 
+
+std::vector<std::vector<double>> AngMatcher::GetMatches(std::string method){
+  return candidates_[method_map_[method]];
+}
+
+
+std::vector<cv::DMatch> AngMatcher::GetMatchesNN(std::string method){
+  return nn_candidates_[method_map_[method]];
+}
+
+
+std::vector<cv::DMatch> AngMatcher::GetMatchesDesc(std::string method){
+  return desc_matches_[method_map_[method]];
+}
+
+
+void AngMatcher::ViewCandidates(std::vector<std::vector<double>> candidates, int kp, std::string cust_name) {
+  cv::Point3f pt0(0, -gmlines1[kp][2] / gmlines1[kp][1], 0.);
+  cv::Point3f pt1(lx, -(gmlines1[kp][2] + gmlines1[kp][0] * lx) / gmlines1[kp][1], 0.);
+  cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
+
+  std::vector<cv::Point2f> points;
+  for (size_t i = 0; i < candidates[kp].size(); i++) {
+    if (candidates[kp][i] > 0.0) {
+      cv::Point2f pt(kpoints2[i].x, kpoints2[i].y);
+      points.push_back(pt);
+    }
+  }
+
+  std::string name = cust_name + " " + std::to_string(kp + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
+  DrawCandidates(im1, im2, line, kpoints1[kp], points, name);
+}
+
+
+void AngMatcher::ViewMatches(std::string method, std::string cust_name, float scale) {
+  cv::Mat im_matches; 
+
+  cv::drawMatches(im1, vkps1, im2, vkps2, desc_matches_[method_map_[method]], im_matches);
+  
+  ResizeAndDisplay(cust_name, im_matches, scale);
+}
 
 
 
@@ -581,15 +633,6 @@ std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCr
       DrawCandidates(im1, im2, line, kpoints1[i], points, name);
     }
   }
-
-  // Num candidates
-  int num_candidates = 0;
-  for (size_t i = 0; i < candidates.size(); i++)
-    for (size_t j = 0; j < candidates[i].size(); j++)
-      if (candidates[i][j] >= 0.)
-        num_candidates++;
-
-  std::cout << "Num candidates: " << num_candidates << std::endl;
 
   return candidates;
 }
@@ -682,14 +725,6 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle3D(float th, bool bCrossV
       DrawCandidates(im1, im2, line, kpoints1[i], points, name);
     }
   }
-
-  // Num candidates
-  int num_candidates = 0;
-  for (size_t i = 0; i < candidates.size(); i++)
-    for (size_t j = 0; j < candidates[i].size(); j++)
-      if (candidates[i][j] >= 0.)
-        num_candidates++;
-  std::cout << "Num candidates: " << num_candidates << std::endl;
 
   return candidates;
 }
@@ -784,14 +819,6 @@ std::vector<std::vector<double>> AngMatcher::MatchSampson(float th, bool bCrossV
     }
   }
 
-  // Num candidates
-  int num_candidates = 0;
-  for (size_t i = 0; i < candidates.size(); i++)
-    for (size_t j = 0; j < candidates[i].size(); j++)
-      if (candidates[i][j] >= 0.)
-        num_candidates++;
-  std::cout << "Num candidates: " << num_candidates << std::endl;
-
   return candidates;
 }
 
@@ -859,14 +886,6 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle2D(float th, bool bCrossV
       myWindow.spin();
     }
   }
-
-  // Num candidates
-  int num_candidates = 0;
-  for (size_t i = 0; i < candidates.size(); i++)
-    for (size_t j = 0; j < candidates[i].size(); j++)
-      if (candidates[i][j] >= 0.)
-        num_candidates++;
-  std::cout << "Num candidates: " << num_candidates << std::endl;
 
   return candidates;
 }
@@ -999,25 +1018,6 @@ std::vector<cv::DMatch> AngMatcher::NNCandidates2(std::vector<std::vector<double
 
   return nn;
 }
-
-
-void AngMatcher::View(std::vector<std::vector<double>> candidates, int kp, std::string cust_name) {
-  cv::Point3f pt0(0, -gmlines1[kp][2] / gmlines1[kp][1], 0.);
-  cv::Point3f pt1(lx, -(gmlines1[kp][2] + gmlines1[kp][0] * lx) / gmlines1[kp][1], 0.);
-  cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
-
-  std::vector<cv::Point2f> points;
-  for (size_t i = 0; i < candidates[kp].size(); i++) {
-    if (candidates[kp][i] > 0.0) {
-      cv::Point2f pt(kpoints2[i].x, kpoints2[i].y);
-      points.push_back(pt);
-    }
-  }
-
-  std::string name = cust_name + " " + std::to_string(kp + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
-  DrawCandidates(im1, im2, line, kpoints1[kp], points, name);
-}
-
 
 
 

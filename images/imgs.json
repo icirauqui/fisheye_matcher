@@ -1,0 +1,12 @@
+{
+    "control": {
+        "num_pairs": 1
+    },
+    "image_pairs": {
+        "pair_0": {
+            "sequence": "Seq_001",
+            "image_0": "1.png",
+            "image_1": "2.png"
+        }
+    }
+}

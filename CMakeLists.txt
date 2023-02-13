@@ -33,6 +33,7 @@ add_executable(fisheye_matcher
   cc/camera.cpp
   cc/camera.h
   cc/ang_matcher.cpp
+  cc/aux.cpp
   cc/aux.h
   cc/main.cpp
 )
