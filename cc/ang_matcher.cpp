@@ -528,13 +528,13 @@ ImgLegend::~ImgLegend() {
 }
 
 
-void ImgLegend::AddLegend(cv::Mat &im, int pos, std::string text, cv::Scalar color) {
-  cv::Point2f pt3(margin_left_, im.rows-((num_items_ - item_count_)*spacing_));
-  cv::Point2f pt4(pt3.x + line_width_, pt3.y);
-  cv::line(im, pt3, pt4, color, 1);
-  cv::Point pt_txt(2*margin_left_ + line_width_, pt3.y);
+void ImgLegend::AddLegend(cv::Mat &im, std::string text, cv::Scalar color) {
+  cv::Point2f pt1(margin_left_, im.rows-((num_items_ - item_count_)*spacing_));
+  cv::Point2f pt2(pt1.x + line_width_, pt1.y);
+  cv::line(im, pt1, pt2, color, 2);
+  cv::Point pt_txt(2*margin_left_ + line_width_, pt1.y+(spacing_/4));
   item_count_++;
-  cv::putText(im, text, pt_txt, cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0,0,0), 1);
+  cv::putText(im, text, pt_txt, cv::FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar(0,0,0), 1);
 }
 
 
@@ -580,7 +580,25 @@ AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoin
   cv::computeCorrespondEpilines(kpoints1, 1, F, gmlines1);
   cv::computeCorrespondEpilines(kpoints2, 2, F, gmlines2);
 
-  // Initialize candidates for num_methods_
+
+  // Initialize data structures for num_methods_
+  for (unsigned int i=0; i<num_methods_; i++) {
+    for (unsigned int j=i; j<num_methods_; j++) {
+      std::string method_key = std::to_string(i) + std::to_string(j);
+      matches_1_not_2[method_key] = std::vector<cv::DMatch>();
+      matches_2_not_1[method_key] = std::vector<cv::DMatch>();
+      matches_1_and_2[method_key] = std::vector<cv::DMatch>();
+      matches_1_diff_2_1[method_key] = std::vector<cv::DMatch>();
+      matches_1_diff_2_2[method_key] = std::vector<cv::DMatch>();
+    }
+  }
+
+  //matches_1_not_2 = std::vector<std::vector<cv::DMatch>>(num_methods_);
+  //matches_2_not_1 = std::vector<std::vector<cv::DMatch>>(num_methods_);
+  //matches_1_and_2 = std::vector<std::vector<cv::DMatch>>(num_methods_);
+  //matches_1_diff_2_1 = std::vector<std::vector<cv::DMatch>>(num_methods_);
+  //matches_1_diff_2_2 = std::vector<std::vector<cv::DMatch>>(num_methods_);
+
   candidates_ = std::vector<std::vector<std::vector<double>>>(num_methods_);
   nn_candidates_ = std::vector<std::vector<cv::DMatch>>(num_methods_);
   desc_matches_ = std::vector<std::vector<cv::DMatch>>(num_methods_);
@@ -597,8 +615,6 @@ AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoin
 AngMatcher::~AngMatcher() {
   //delete this;
 }
-
-
 
 
 void AngMatcher::Match(std::string method,
@@ -646,11 +662,23 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
   std::vector<cv::DMatch> matches1 = desc_matches_[method_map_[method1]];
   std::vector<cv::DMatch> matches2 = desc_matches_[method_map_[method2]];
 
+  int method1_idx = method_map_[method1];
+  int method2_idx = method_map_[method2];
+  if (method1_idx > method2_idx) {
+    std::cout << "    Swapping methods" << std::endl;
+    std::swap(method1_idx, method2_idx);
+    std::swap(method1, method2);
+    std::swap(matches1, matches2);
+  }
+  std::string method_key = std::to_string(method1_idx) + std::to_string(method2_idx);
+
   std::vector<int> queryIdx = GetPointIndices(matches1, matches2);
 
   std::vector<int> trainIdx1, trainIdx2;
 
-  std::cout << " - queryIdx length: " << queryIdx.size() << std::endl;
+  //std::cout << " - queryIdx length: " << queryIdx.size() << std::endl;
+  std::cout << "   =============================" << std::endl;
+  std::cout << "    Compare matches " << method1 << " vs " << method2 << std::endl;
 
   for (auto idx : queryIdx) {
     // Find idx in matches1
@@ -687,7 +715,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     if (trainIdx1[i] != -1 && trainIdx2[i] == -1){
       auto it = std::find_if(matches1.begin(), matches1.end(), [q](cv::DMatch m){return m.queryIdx == q;});
       if (it != matches1.end()){
-        matches_1_not_2.push_back(*it);
+        matches_1_not_2[method_key].push_back(*it);
       }
     }
   }
@@ -698,12 +726,11 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     std::cout << "     Matches " << method1 << " not " << method2 << std::endl;
     std::cout << "      imgIdx\tqueryIdx\ttrainIdx\tdistance" << std::endl;
     std::cout << "      ------\t--------\t--------\t--------" << std::endl;
-    for (auto m : matches_1_not_2){
+    for (auto m : matches_1_not_2[method_key]){
       std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
     }
     std::cout << "      ------\t--------\t--------\t--------" << std::endl;
   }
-
 
   // Build DMAtch vector with matched in angle but not in sampson
   for (unsigned int i=0; i<queryIdx.size(); i++){
@@ -711,7 +738,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     if (trainIdx1[i] == -1 && trainIdx2[i] != -1){
       auto it = std::find_if(matches2.begin(), matches2.end(), [q](cv::DMatch m){return m.queryIdx == q;});
       if (it != matches2.end()){
-        matches_2_not_1.push_back(*it);
+        matches_2_not_1[method_key].push_back(*it);
       }
     }
   }
@@ -722,7 +749,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     std::cout << "     Matches " << method2 << " not " << method1 << std::endl;
     std::cout << "      imgIdx\tqueryIdx\ttrainIdx\tdistance" << std::endl;
     std::cout << "      ------\t--------\t--------\t--------" << std::endl;
-    for (auto m : matches_2_not_1){
+    for (auto m : matches_2_not_1[method_key]){
       std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
     }
     std::cout << "      ------\t--------\t--------\t--------" << std::endl;
@@ -735,7 +762,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     if (trainIdx1[i] != -1 && trainIdx2[i] != -1){
       auto it = std::find_if(matches2.begin(), matches2.end(), [q](cv::DMatch m){return m.queryIdx == q;});
       if (it != matches2.end()){
-        matches_1_and_2.push_back(*it);
+        matches_1_and_2[method_key].push_back(*it);
       }
     }
   }
@@ -745,7 +772,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     std::cout << "     Matches " << method1 << " and " << method2 << std::endl;
     std::cout << "      imgIdx\tqueryIdx\ttrainIdx\tdistance" << std::endl;
     std::cout << "      ------\t--------\t--------\t--------" << std::endl;
-    for (auto m : matches_1_and_2){
+    for (auto m : matches_1_and_2[method_key]){
       std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
     }
     std::cout << "      ------\t--------\t--------\t--------" << std::endl;
@@ -759,8 +786,8 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
       auto it1 = std::find_if(matches1.begin(), matches1.end(), [q](cv::DMatch m){return m.queryIdx == q;});
       auto it2 = std::find_if(matches2.begin(), matches2.end(), [q](cv::DMatch m){return m.queryIdx == q;});
       if (it1 != matches2.end() && it2 != matches2.end() && it1->trainIdx != it2->trainIdx){
-        matches_1_diff_2_1.push_back(*it1);
-        matches_1_diff_2_2.push_back(*it2);
+        matches_1_diff_2_1[method_key].push_back(*it1);
+        matches_1_diff_2_2[method_key].push_back(*it2);
       }
     }
   }
@@ -770,9 +797,9 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     std::cout << "     Matches " << method1 << " and " << method2 << " with different targetIdx" << std::endl;
     std::cout << "      imgIdx\tqueryIdx\ttrainIdx1\ttrainIdx2" << std::endl;
     std::cout << "      ------\t--------\t--------\t--------" << std::endl;
-    for (unsigned int i=0; i<matches_1_diff_2_1.size(); i++){
-      cv::DMatch m1 = matches_1_diff_2_1[i];
-      cv::DMatch m2 = matches_1_diff_2_2[i];
+    for (unsigned int i=0; i<matches_1_diff_2_1[method_key].size(); i++){
+      cv::DMatch m1 = matches_1_diff_2_1[method_key][i];
+      cv::DMatch m2 = matches_1_diff_2_2[method_key][i];
       std::cout << "      " << m1.imgIdx << "\t" << m1.queryIdx << "\t" << m1.trainIdx << "\t" << m2.trainIdx << std::endl;
     }
     std::cout << "      ------\t--------\t--------\t--------" << std::endl;
@@ -781,10 +808,12 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
 
 
 
-  std::cout << "    Matches 1 not 2 size  " << matches_1_not_2.size() << std::endl;
-  std::cout << "    Matches 2 not 1 size  " << matches_2_not_1.size() << std::endl;
-  std::cout << "    Matches 1 and 2 size  " << matches_1_and_2.size() << std::endl;
-  std::cout << "    Matches 1 diff 2 size " << matches_1_diff_2_1.size() << std::endl;
+  std::cout << "    Matches 1 not 2 size  " << matches_1_not_2[method_key].size() << std::endl;
+  std::cout << "    Matches 2 not 1 size  " << matches_2_not_1[method_key].size() << std::endl;
+  std::cout << "    Matches 1 and 2 size  " << matches_1_and_2[method_key].size() << std::endl;
+  std::cout << "    Matches 1 diff 2 size " << matches_1_diff_2_1[method_key].size() << std::endl;
+
+
 
 
   // Draw segregation in a single image differentiating by color
@@ -797,7 +826,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
   int radius = 6;
   
   // Draw matches in 1 but not in 2 in red
-  for (auto m : matches_1_not_2){
+  for (auto m : matches_1_not_2[method_key]){
     cv::Point2f p1 = kps1[m.queryIdx].pt;
     cv::Point2f p2 = kps2[m.trainIdx].pt;
     p2.x += im1.cols;
@@ -808,7 +837,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
   }
 
   // Draw matches in 2 but not in 1 in green
-  for (auto m : matches_2_not_1){
+  for (auto m : matches_2_not_1[method_key]){
     cv::Point2f p1 = kps1[m.queryIdx].pt;
     cv::Point2f p2 = kps2[m.trainIdx].pt;
     p2.x += im1.cols;
@@ -819,7 +848,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
   }
 
   // Draw matches in 1 and in 2 in blue
-  for (auto m : matches_1_and_2){
+  for (auto m : matches_1_and_2[method_key]){
     cv::Point2f p1 = kps1[m.queryIdx].pt;
     cv::Point2f p2 = kps2[m.trainIdx].pt;
     p2.x += im1.cols;
@@ -830,9 +859,9 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
   }
 
   // Draw matches in 1 and in 2 with different targetIdx in black
-  for (unsigned int i=0; i<matches_1_diff_2_1.size(); i++){
-    cv::DMatch m1 = matches_1_diff_2_1[i];
-    cv::DMatch m2 = matches_1_diff_2_2[i];
+  for (unsigned int i=0; i<matches_1_diff_2_1[method_key].size(); i++){
+    cv::DMatch m1 = matches_1_diff_2_1[method_key][i];
+    cv::DMatch m2 = matches_1_diff_2_2[method_key][i];
     cv::Point2f p1 = kps1[m1.queryIdx].pt;
     cv::Point2f p2 = kps2[m1.trainIdx].pt;
     cv::Point2f p3 = kps2[m2.trainIdx].pt;
@@ -849,10 +878,10 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
   
   // Add legend to image
   ImgLegend legend(imout_matches_segregation, 110, 20, 80, 20);
-  legend.AddLegend(imout_matches_segregation, 0, "Matches in " + method1 + " but not in " + method2, cv::Scalar(0,0,255));
-  legend.AddLegend(imout_matches_segregation, 0, "Matches in " + method2 + " but not in " + method1, cv::Scalar(0,255,0));
-  legend.AddLegend(imout_matches_segregation, 0, "Matches in " + method1 + " and " + method2, cv::Scalar(255,0,0));
-  legend.AddLegend(imout_matches_segregation, 0, "Matches in " + method1 + " and " + method2 + " with different targetIdx", cv::Scalar(0,0,0));
+  legend.AddLegend(imout_matches_segregation, std::to_string(matches_1_not_2[method_key].size()) + " Matches in " + method1 + " but not in " + method2, cv::Scalar(0,0,255));
+  legend.AddLegend(imout_matches_segregation, std::to_string(matches_2_not_1[method_key].size()) + " Matches in " + method2 + " but not in " + method1, cv::Scalar(0,255,0));
+  legend.AddLegend(imout_matches_segregation, std::to_string(matches_1_and_2[method_key].size()) + " Matches in " + method1 + " and " + method2, cv::Scalar(255,0,0));
+  legend.AddLegend(imout_matches_segregation, std::to_string(matches_1_diff_2_1[method_key].size()) + " Matches in " + method1 + " and " + method2 + " with different targetIdx", cv::Scalar(0,0,0));
 
 
 

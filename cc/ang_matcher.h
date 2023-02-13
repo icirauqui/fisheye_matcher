@@ -125,7 +125,7 @@ public:
 
   ~ImgLegend();
 
-  void AddLegend(cv::Mat &im, int pos, std::string text, cv::Scalar color);
+  void AddLegend(cv::Mat &im, std::string text, cv::Scalar color);
 
 private:
   
@@ -226,15 +226,15 @@ private:
   cv::Mat t;
   cv::Mat K;
 
-  std::vector<cv::DMatch> matches_1_not_2;
-  std::vector<cv::DMatch> matches_2_not_1;
-  std::vector<cv::DMatch> matches_1_and_2;
-  std::vector<cv::DMatch> matches_1_diff_2_1;
-  std::vector<cv::DMatch> matches_1_diff_2_2;
+  std::unordered_map<std::string, std::vector<cv::DMatch>> matches_1_not_2;
+  std::unordered_map<std::string, std::vector<cv::DMatch>> matches_2_not_1;
+  std::unordered_map<std::string, std::vector<cv::DMatch>> matches_1_and_2;
+  std::unordered_map<std::string, std::vector<cv::DMatch>> matches_1_diff_2_1;
+  std::unordered_map<std::string, std::vector<cv::DMatch>> matches_1_diff_2_2;
 
 
   // Analysis resutls
-  int num_methods_ = 4;
+  unsigned int num_methods_ = 4;
   std::unordered_map<std::string, int> method_map_ = {{"epiline", 0}, {"sampson", 1}, {"angle2d", 2}, {"angle3d", 3}};
   std::vector<std::vector<std::vector<double>>> candidates_;
   std::vector<std::vector<cv::DMatch>> nn_candidates_;
