@@ -41,19 +41,6 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
-    name = "feature_matcher",
-    hdrs = ["cc/feature_matcher.h"],
-    srcs = ["cc/feature_matcher.cpp"],
-    deps = [
-        "@opencv//:opencv",
-        ":aux",
-    ],
-    linkstatic=True,
-    strip_include_prefix = "cc",
-    visibility = ["//visibility:public"],
-)
-
 cc_binary(
     name = "main",
     srcs = ["cc/main.cpp"],
@@ -62,7 +49,6 @@ cc_binary(
         ":json",
         ":camera",
         ":ang_matcher",
-        ":feature_matcher",
         "@opencv//:opencv",
     ],
     includes = ["cc"],
@@ -70,19 +56,3 @@ cc_binary(
     #linkstatic=True,
     visibility = ["//visibility:public"],
 )
-
-cc_binary(
-    name = "mainb",
-    srcs = ["cc/mainb.cpp"],
-    deps = [
-        "@opencv//:opencv",
-    ],
-    data = glob(["images/**"]),
-    #data = [
-    #  "LinuxLogo.jpg",
-    #  "WindowsLogo.jpg",
-    #],
-    linkstatic=True,
-    visibility = ["//visibility:public"],
-)
-

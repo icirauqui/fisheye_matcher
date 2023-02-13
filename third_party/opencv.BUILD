@@ -10,7 +10,8 @@ filegroup(
 cmake(
     name = "opencv",
     generate_args = ["-GNinja"],
-    additional_inputs=["@opencv_contrib//:modules"],
+    #additional_inputs=["@opencv_contrib//:modules"],
+    build_data=["@opencv_contrib//:modules"],
     cache_entries = {
         "CMAKE_BUILD_TYPE": "RELEASE",
         "INSTALL_C_EXAMPLES": "OFF",

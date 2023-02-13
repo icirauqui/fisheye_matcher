@@ -13,7 +13,6 @@
 #include "ang_matcher.h"
 #include "../third_party/nlohmann/json.hpp"
 #include "camera.h"
-#include "feature_matcher.h"
 
 
 
@@ -23,8 +22,6 @@ using namespace am;
 
 
 int main() {
-  bool bDraw = false;
-
   std::cout << " 1. Loading data" << std::endl; 
 
   std::cout << " 1.1 Camera parameters from cams.json" << std::endl;
@@ -81,15 +78,18 @@ int main() {
 
   std::cout << " 3. Matching features" << std::endl;
 
-  float max_ratio = 0.8f;
-  float max_distance = 0.7f;
+  //float max_ratio = 0.8f;           //COLMAP
+  //float max_distance = 0.7f;        //COLMAP
+  //int max_num_matches = 32768;      //COLMAP
+  //float max_error = 4.0f;           //COLMAP
+  //float confidence = 0.999f;        //COLMAP
+  //int max_num_trials = 10000;       //COLMAP
+  //float min_inliner_ratio = 0.25f;  //COLMAP
+  //int min_num_inliers = 15;         //COLMAP
+  
   bool cross_check = true;
-  int max_num_matches = 32768;
-  float max_error = 4.0f;
-  float confidence = 0.999f;
-  int max_num_trials = 10000;
-  float min_inliner_ratio = 0.25f;
-  int min_num_inliers = 15;
+  bool draw_inline = false;
+  bool draw_global = false;
 
   std::vector<cv::DMatch> matches_knn = MatchKnn(desc1, desc2, 0.8f);
   std::vector<cv::DMatch> matches_knn_07 = MatchKnn(desc1, desc2, 0.7f);
@@ -142,10 +142,10 @@ int main() {
   // Match by distance threshold
   AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, cam.K());
 
-  am.Match("epiline", th_epiline, th_sift, true, false, false, false);
-  am.Match("sampson", th_sampson, th_sift, true, false, false, false);
-  am.Match("angle2d", th_angle2d, th_sift, true, false, false, false);
-  am.Match("angle3d", th_angle3d, th_sift, true, false, false, false);
+  am.Match("epiline", th_epiline, th_sift, cross_check, draw_inline, draw_global);
+  am.Match("sampson", th_sampson, th_sift, cross_check, draw_inline, draw_global);
+  am.Match("angle2d", th_angle2d, th_sift, cross_check, draw_inline, draw_global);
+  am.Match("angle3d", th_angle3d, th_sift, cross_check, draw_inline, draw_global);
 
   //am.ViewMatches("epiline", "epiline desc matches", 0.5);
 
@@ -154,21 +154,16 @@ int main() {
 
 
   std::cout << " 6. Compare matches" << std::endl;
-
+  am.CompareMatches("epiline", "sampson", 1);
+  am.CompareMatches("epiline", "angle2d", 1);
+  am.CompareMatches("epiline", "angle3d", 1);
 
   am.CompareMatches("sampson", "angle2d", 1);
+  am.CompareMatches("sampson", "angle3d", 1);
+
+  am.CompareMatches("angle2d", "angle3d", 1);
 
 
-  FeatureMatcher fm(im1, im2);
-
-  cv::Mat imout_matches_candidates = fm.DrawCandidates(
-    im1, im2, 
-    kps1, kps2,
-    F12,
-    am.GetMatchesNN("sampson"), am.GetMatchesNN("angle2d"), 
-    1);
-
-  ResizeAndDisplay("Epipolar compare", imout_matches_candidates, 0.5);
 
 
   

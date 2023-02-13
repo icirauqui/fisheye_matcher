@@ -5,6 +5,74 @@ namespace am {
 
 
 
+
+cv::Mat EfromF(const cv::Mat &F, const cv::Mat &K) {
+  cv::Mat E = K.t() * F * K;
+  //cv::SVD svd(E);
+  //cv::Mat W = (cv::Mat_<double>(3, 3) << 0, -1, 0, 1, 0, 0, 0, 0, 1);
+  //cv::Mat Wt = (cv::Mat_<double>(3, 3) << 0, 1, 0, -1, 0, 0, 0, 0, 1);
+  //E = svd.u * W * svd.vt;
+  return E;
+}
+
+void RtfromEsvd(const cv::Mat &E, cv::Mat &R, cv::Mat &t) {
+  cv::SVD svd(E);
+  cv::Mat W = (cv::Mat_<double>(3, 3) << 0, -1, 0, 1, 0, 0, 0, 0, 1);
+  cv::Mat Wt = (cv::Mat_<double>(3, 3) << 0, 1, 0, -1, 0, 0, 0, 0, 1);
+  R = svd.u * W * svd.vt;
+  t = svd.u.col(2);
+}
+
+void RtfromE(const cv::Mat &E, cv::Mat &K, cv::Mat &R, cv::Mat &t) {
+  cv::recoverPose(E, cv::Mat::zeros(1, 8, CV_64F), cv::Mat::zeros(1, 8, CV_64F), K, R, t);
+}
+
+
+std::vector<cv::DMatch> MatchKnn(const cv::Mat &descriptors1, const cv::Mat &descriptors2, float ratio_thresh) {
+  // Match by BF/KNN
+  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+  std::vector<std::vector<cv::DMatch>> matches_knn_all;
+  matcher->knnMatch(descriptors1, descriptors2, matches_knn_all, 2);
+  std::vector<cv::DMatch> matches_knn;
+  for (size_t i = 0; i < matches_knn_all.size(); i++) {
+    if (matches_knn_all[i][0].distance < ratio_thresh * matches_knn_all[i][1].distance) {
+      matches_knn.push_back(matches_knn_all[i][0]);
+    }
+  }
+  return matches_knn;
+}
+
+
+
+std::vector<cv::DMatch> MatchFLANN(const cv::Mat &descriptors1, const cv::Mat &descriptors2, float ratio_thresh) {
+  // Match by FLANN
+  cv::FlannBasedMatcher matcher;
+  std::vector<std::vector<cv::DMatch>> matches_flann_all;
+  matcher.knnMatch(descriptors1, descriptors2, matches_flann_all, 2);
+  std::vector<cv::DMatch> matches_flann;
+  for (size_t i = 0; i < matches_flann_all.size(); i++) {
+    if (matches_flann_all[i][0].distance < ratio_thresh * matches_flann_all[i][1].distance) {
+      matches_flann.push_back(matches_flann_all[i][0]);
+    }
+  }
+  return matches_flann;
+}
+
+
+
+std::vector<cv::DMatch> MatchBF(const cv::Mat &descriptors1, const cv::Mat &descriptors2, bool crossCheck) {
+  // Match by BF
+  cv::BFMatcher matcher(cv::NORM_L2, crossCheck);
+  std::vector<cv::DMatch> matches_bf;
+  matcher.match(descriptors1, descriptors2, matches_bf);
+  return matches_bf;
+}
+
+
+
+
+
+
 cv::Mat CompareEpipolarLines(const std::string &title, const cv::Mat F,
                               const cv::Mat &img1, const cv::Mat &img2,
                               const std::vector<cv::Point2f> points1, const std::vector<cv::Point2f> points2,
@@ -441,6 +509,36 @@ std::vector<int> ordered_indices(const std::vector<double> &v) {
 
 
 
+ImgLegend::ImgLegend(cv::Mat &im, int height, int margin_left, int line_width, int spacing) {
+  height_ = height;
+  margin_left_ = margin_left;
+  line_width_ = line_width;
+  spacing_ = spacing;
+  num_items_ = (height_ / spacing_) - 1;
+
+  cv::Mat im_legend;
+  im_legend = cv::Mat::zeros(height_, im.cols, CV_8UC3);
+  im_legend = cv::Scalar(255,255,255);
+  cv::vconcat(im, im_legend, im);
+}
+
+
+ImgLegend::~ImgLegend() {
+
+}
+
+
+void ImgLegend::AddLegend(cv::Mat &im, int pos, std::string text, cv::Scalar color) {
+  cv::Point2f pt3(margin_left_, im.rows-((num_items_ - item_count_)*spacing_));
+  cv::Point2f pt4(pt3.x + line_width_, pt3.y);
+  cv::line(im, pt3, pt4, color, 1);
+  cv::Point pt_txt(2*margin_left_ + line_width_, pt3.y);
+  item_count_++;
+  cv::putText(im, text, pt_txt, cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0,0,0), 1);
+}
+
+
+
 
 
 AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoint> vkps2_,
@@ -506,20 +604,19 @@ AngMatcher::~AngMatcher() {
 void AngMatcher::Match(std::string method,
                        float th_geom, float th_desc,
                        bool bCrossVerification, 
-                       bool draw_inline, bool draw_final, 
-                       bool bFiltered) {
+                       bool draw_inline, bool draw_final) {
 
   if (method == "epiline") {
-    candidates_[method_map_[method]] = MatchEpilineDist(th_geom, bCrossVerification, draw_inline, bFiltered);
+    candidates_[method_map_[method]] = MatchEpilineDist(th_geom, bCrossVerification, draw_inline);
   }
   else if (method == "sampson") {
-    candidates_[method_map_[method]] = MatchSampson(th_geom, bCrossVerification, draw_inline, bFiltered);
+    candidates_[method_map_[method]] = MatchSampson(th_geom, bCrossVerification, draw_inline);
   }
   else if (method == "angle2d") {
-    candidates_[method_map_[method]] = MatchAngle2D(th_geom, bCrossVerification, draw_inline, bFiltered);
+    candidates_[method_map_[method]] = MatchAngle2D(th_geom, bCrossVerification, draw_inline);
   }
   else if (method == "angle3d") {
-    candidates_[method_map_[method]] = MatchAngle3D(th_geom, bCrossVerification, draw_inline, bFiltered);
+    candidates_[method_map_[method]] = MatchAngle3D(th_geom, bCrossVerification, draw_inline);
   }
   else {
     std::cout << "Match method doesn't exist" << std::endl;
@@ -544,17 +641,10 @@ void AngMatcher::Match(std::string method,
 void AngMatcher::CompareMatches(std::string method1, std::string method2,
                                 int report_level) {
 
-  std::cout << "==== Compare matches ====" << std::endl;
-
   std::vector<cv::KeyPoint> kps1 = vkps1;
   std::vector<cv::KeyPoint> kps2 = vkps2;
   std::vector<cv::DMatch> matches1 = desc_matches_[method_map_[method1]];
   std::vector<cv::DMatch> matches2 = desc_matches_[method_map_[method2]];
-
-  std::cout << "Matches 1 not 2 size " << matches_1_not_2.size() << std::endl;
-  std::cout << "Matches 2 not 1 size " << matches_2_not_1.size() << std::endl;
-  std::cout << "Matches 1 and 2 size " << matches_1_and_2.size() << std::endl;
-
 
   std::vector<int> queryIdx = GetPointIndices(matches1, matches2);
 
@@ -583,11 +673,12 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
   if (report_level >= 1) {
     std::cout << "      queryIdx\t" << method1 << "\t" << method2 << std::endl;
     std::cout << "      --------\t-------\t-----" << std::endl;
-    for (int i = 0; i < queryIdx.size(); i++){
+    for (size_t i = 0; i < queryIdx.size(); i++){
       std::cout << "      " << queryIdx[i] << "\t" << trainIdx1[i] << "\t" << trainIdx2[i] << std::endl;
     }
     std::cout << "      --------\t-------\t-----" << std::endl;
     std::cout << "             \t" << matches1.size() << "\t" << matches2.size() << std::endl;
+    std::cout << "      --------\t-------\t-----" << std::endl;
   }
 
   // Build DMatch vector with matched in sampson but not in angle
@@ -689,6 +780,13 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
 
 
 
+
+  std::cout << "    Matches 1 not 2 size  " << matches_1_not_2.size() << std::endl;
+  std::cout << "    Matches 2 not 1 size  " << matches_2_not_1.size() << std::endl;
+  std::cout << "    Matches 1 and 2 size  " << matches_1_and_2.size() << std::endl;
+  std::cout << "    Matches 1 diff 2 size " << matches_1_diff_2_1.size() << std::endl;
+
+
   // Draw segregation in a single image differentiating by color
   // Join image 1 and image 2
   cv::Mat imout_matches_segregation;
@@ -698,18 +796,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
   int thickness = 1;
   int radius = 6;
   
-  // Draw matches in angle but not in sampson in green
-  for (auto m : matches_2_not_1){
-    cv::Point2f p1 = kps1[m.queryIdx].pt;
-    cv::Point2f p2 = kps2[m.trainIdx].pt;
-    p2.x += im1.cols;
-    cv::line(imout_matches_segregation, p1, p2, cv::Scalar(0,255,0), thickness);
-    // Draw circle around keypoint
-    cv::circle(imout_matches_segregation, p1, radius, cv::Scalar(0,255,0), thickness);
-    cv::circle(imout_matches_segregation, p2, radius, cv::Scalar(0,255,0), thickness);
-  }
-
-  // Draw matches in sampson but not in angle in red
+  // Draw matches in 1 but not in 2 in red
   for (auto m : matches_1_not_2){
     cv::Point2f p1 = kps1[m.queryIdx].pt;
     cv::Point2f p2 = kps2[m.trainIdx].pt;
@@ -720,7 +807,18 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     cv::circle(imout_matches_segregation, p2, radius, cv::Scalar(0,0,255), thickness);
   }
 
-  // Draw matches in angle and in sampson in blue
+  // Draw matches in 2 but not in 1 in green
+  for (auto m : matches_2_not_1){
+    cv::Point2f p1 = kps1[m.queryIdx].pt;
+    cv::Point2f p2 = kps2[m.trainIdx].pt;
+    p2.x += im1.cols;
+    cv::line(imout_matches_segregation, p1, p2, cv::Scalar(0,255,0), thickness);
+    // Draw circle around keypoint
+    cv::circle(imout_matches_segregation, p1, radius, cv::Scalar(0,255,0), thickness);
+    cv::circle(imout_matches_segregation, p2, radius, cv::Scalar(0,255,0), thickness);
+  }
+
+  // Draw matches in 1 and in 2 in blue
   for (auto m : matches_1_and_2){
     cv::Point2f p1 = kps1[m.queryIdx].pt;
     cv::Point2f p2 = kps2[m.trainIdx].pt;
@@ -731,8 +829,35 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
     cv::circle(imout_matches_segregation, p2, radius, cv::Scalar(255,0,0), thickness);
   }
 
+  // Draw matches in 1 and in 2 with different targetIdx in black
+  for (unsigned int i=0; i<matches_1_diff_2_1.size(); i++){
+    cv::DMatch m1 = matches_1_diff_2_1[i];
+    cv::DMatch m2 = matches_1_diff_2_2[i];
+    cv::Point2f p1 = kps1[m1.queryIdx].pt;
+    cv::Point2f p2 = kps2[m1.trainIdx].pt;
+    cv::Point2f p3 = kps2[m2.trainIdx].pt;
+    p2.x += im1.cols;
+    p3.x += im1.cols;
+    cv::line(imout_matches_segregation, p1, p2, cv::Scalar(0,0,0), thickness);
+    cv::line(imout_matches_segregation, p1, p3, cv::Scalar(0,0,0), thickness);
+    // Draw circle around keypoint
+    cv::circle(imout_matches_segregation, p1, radius, cv::Scalar(0,0,0), thickness);
+    cv::circle(imout_matches_segregation, p2, radius, cv::Scalar(0,0,0), thickness);
+    cv::circle(imout_matches_segregation, p3, radius, cv::Scalar(0,0,0), thickness);
+  }
 
-  ResizeAndDisplay("Matches Segregation", imout_matches_segregation, 0.5);
+  
+  // Add legend to image
+  ImgLegend legend(imout_matches_segregation, 110, 20, 80, 20);
+  legend.AddLegend(imout_matches_segregation, 0, "Matches in " + method1 + " but not in " + method2, cv::Scalar(0,0,255));
+  legend.AddLegend(imout_matches_segregation, 0, "Matches in " + method2 + " but not in " + method1, cv::Scalar(0,255,0));
+  legend.AddLegend(imout_matches_segregation, 0, "Matches in " + method1 + " and " + method2, cv::Scalar(255,0,0));
+  legend.AddLegend(imout_matches_segregation, 0, "Matches in " + method1 + " and " + method2 + " with different targetIdx", cv::Scalar(0,0,0));
+
+
+
+  std::string frame_title = "Matches Segregation: " + method1 + " vs " + method2;
+  ResizeAndDisplay(frame_title, imout_matches_segregation, 0.5);
 }
 
 
@@ -780,7 +905,7 @@ void AngMatcher::ViewMatches(std::string method, std::string cust_name, float sc
 
 
 std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCrossVerification, 
-                                                              bool bDraw, bool bFiltered) {
+                                                              bool bDraw) {
 
   // Look for match candidates
   std::vector<std::vector<double>> candidates = std::vector<std::vector<double>>(vkps1.size(), std::vector<double>(vkps2.size(), -1.));
@@ -796,9 +921,10 @@ std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCr
       cv::Point2f kp(kpoints2[j].x, kpoints2[j].y);
 
       if (DistancePointLine(kp,line) <= th) {
-        double dist_l2 = 0.;
-        if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
-          dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
+        //double dist_l2 = 0.;
+        //if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+        //  dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
+        double dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
         candidates[i][j] = dist_l2;
 
         // Cross verification with image 1
@@ -810,9 +936,10 @@ std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCr
           cv::Point2f im1kp(kpoints1[i].x, kpoints1[i].y);
 
           if (DistancePointLine(im1kp,im1line) <= th || !bCrossVerification) {
-            double dist_l2 = 0.;
-            if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
-              dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
+            //double dist_l2 = 0.;
+            //if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+            //  dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
+            double dist_l2  = norm(dsc1.row(i),dsc2.row(j),cv::NORM_L2);
             candidates[i][j] += dist_l2;
 
             points.push_back(kp);
@@ -833,7 +960,7 @@ std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCr
 
 
 std::vector<std::vector<double>> AngMatcher::MatchAngle3D(float th, bool bCrossVerification, 
-                                                        bool bDraw, bool bFiltered) {
+                                                        bool bDraw) {
 
 
   
@@ -929,7 +1056,7 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle3D(float th, bool bCrossV
 
 
 std::vector<std::vector<double>> AngMatcher::MatchSampson(float th, bool bCrossVerification, 
-                                                          bool bDraw, bool bFiltered) {
+                                                          bool bDraw) {
 
   // Look for match candidates
   std::vector<std::vector<double>> candidates = std::vector<std::vector<double>>(vkps1.size(), std::vector<double>(vkps2.size(), -1.));
@@ -949,9 +1076,10 @@ std::vector<std::vector<double>> AngMatcher::MatchSampson(float th, bool bCrossV
       cv::Mat point2m(cv::Point3d(vkps2[j].pt.x, vkps2[j].pt.y, 1.0));
 
       if (cv::sampsonDistance(point1m, point2m, F) <= th) {
-        double dist_l2 = 0.;
-        if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
-          dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
+        //double dist_l2 = 0.;
+        //if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+        //  dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
+        double dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
         candidates[i][j] = dist_l2;
         points.push_back(kpoints2[j]);
 
@@ -1016,7 +1144,7 @@ std::vector<std::vector<double>> AngMatcher::MatchSampson(float th, bool bCrossV
 }
 
 std::vector<std::vector<double>> AngMatcher::MatchAngle2D(float th, bool bCrossVerification, 
-                                                        bool bDraw, bool bFiltered) {
+                                                        bool bDraw) {
 
   // Look for match candidates
   std::vector<std::vector<double>> candidates = std::vector<std::vector<double>>(vkps1.size(), std::vector<double>(vkps2.size(), -1.));
@@ -1041,9 +1169,10 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle2D(float th, bool bCrossV
 
         if (AngleLinePlane(im1pi, im1v) <= th || !bCrossVerification)
         {
-          double dist_l2 = 0.;
-          if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
-            dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
+          //double dist_l2 = 0.;
+          //if (vkps1.size() == dsc1.rows && vkps2.size() == dsc2.rows)
+          //  dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
+          double dist_l2 = norm(dsc1.row(i), dsc2.row(j), cv::NORM_L2);
           candidates[i][j] = dist_l2;
         }
       }
@@ -1277,7 +1406,7 @@ void ResizeAndDisplay(const std::string &title, const std::vector<cv::Mat> &imgs
   int resultImgH = imgs2[0].rows*imgsInCol;
 
   cv::Mat resultImg = cv::Mat::zeros(resultImgH, resultImgW, CV_8UC3);
-  int ind=0;
+  unsigned int ind=0;
   cv::Mat tmp;
   for(int i=0;i<imgsInCol;i++) {
     for(int j=0;j<imgsInRow;j++) {

@@ -31,8 +31,6 @@ file(CREATE_LINK "${PROJECT_SOURCE_DIR}/images"
 
 add_executable(fisheye_matcher
   third_party/nlohmann/json.hpp
-  cc/feature_matcher.cpp
-  cc/feature_matcher.h
   cc/camera.cpp
   cc/camera.h
   cc/ang_matcher.cpp

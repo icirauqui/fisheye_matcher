@@ -21,6 +21,19 @@
 namespace am {
 
 
+cv::Mat EfromF(const cv::Mat &F, const cv::Mat &K);
+
+void RtfromEsvd(const cv::Mat &E, cv::Mat &R, cv::Mat &t);
+
+void RtfromE(const cv::Mat &E, cv::Mat &K, cv::Mat &R, cv::Mat &t);
+
+std::vector<cv::DMatch> MatchKnn(const cv::Mat &descriptors1, const cv::Mat &descriptors2, float ratio_thresh);
+
+std::vector<cv::DMatch> MatchFLANN(const cv::Mat &descriptors1, const cv::Mat &descriptors2, float ratio_thresh);
+
+std::vector<cv::DMatch> MatchBF(const cv::Mat &descriptors1, const cv::Mat &descriptors2, bool crossCheck = false);
+
+
 
 cv::Mat CompareEpipolarLines(const std::string &title, const cv::Mat F,
                               const cv::Mat &img1, const cv::Mat &img2,
@@ -103,6 +116,30 @@ void indices_from_flatten_position(int &i, int &j, int pos, int cols);
 std::vector<int> ordered_indices(const std::vector<double> &v);
 
 
+
+class ImgLegend {
+
+public:
+
+  ImgLegend(cv::Mat &im, int height, int margin_left, int line_width, int spacing);
+
+  ~ImgLegend();
+
+  void AddLegend(cv::Mat &im, int pos, std::string text, cv::Scalar color);
+
+private:
+  
+  int height_;
+  int margin_left_;
+  int line_width_;
+  int spacing_;
+
+  int num_items_;
+  int item_count_;
+
+};
+
+
 class AngMatcher {
 
 public:
@@ -123,8 +160,7 @@ public:
   void Match(std::string method,
              float th_geom, float th_desc, 
              bool bCrossVerification = false, 
-             bool draw_inline = false, bool draw_final = false,
-             bool bFiltered = false);
+             bool draw_inline = false, bool draw_final = false);
 
   void CompareMatches(std::string method1, std::string method2,
                       int report_level);
@@ -146,22 +182,22 @@ private:
 
   // Matches with epipolar line distance and draws the candidates
   std::vector<std::vector<double>> MatchEpilineDist(float th, bool bCrossVerification = false, 
-                                                    bool bDraw = false, bool bFiltered = false);
+                                                    bool bDraw = false);
 
 
 
   // Matches with angle thresholding and draws the candidates
   std::vector<std::vector<double>> MatchAngle3D(float th, bool bCrossVerification, 
-                                                  bool bDraw, bool bFiltered);
+                                                  bool bDraw);
 
 
   // Matches Sampson distance
   std::vector<std::vector<double>> MatchSampson(float th, bool bCrossVerification = false, 
-                                                bool bDraw = false, bool bFiltered = false);
+                                                bool bDraw = false);
 
   // Matches with angle thresholding
   std::vector<std::vector<double>> MatchAngle2D(float th, bool bCrossVerification = false, 
-                                              bool bDraw = false, bool bFiltered = false);
+                                              bool bDraw = false);
 
 
   std::vector<cv::DMatch> MatchDescriptors(std::vector<std::vector<double>> candidates, cv::Mat desc1, cv::Mat desc2, double th);
