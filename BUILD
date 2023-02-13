@@ -66,16 +66,23 @@ cc_binary(
         "@opencv//:opencv",
     ],
     includes = ["cc"],
+    data = glob(["images/**"]),
+    #linkstatic=True,
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "mainb",
+    srcs = ["cc/mainb.cpp"],
+    deps = [
+        "@opencv//:opencv",
+    ],
+    data = glob(["images/**"]),
+    #data = [
+    #  "LinuxLogo.jpg",
+    #  "WindowsLogo.jpg",
+    #],
     linkstatic=True,
     visibility = ["//visibility:public"],
 )
 
-
-
-
-exports_files(
-    [
-        "bazel-out/k8-fastbuild/bin/external/oneDNN/oneDNN/lib/libdnnl.so",
-        "bazel-out/k8-fastbuild/bin/external/oneDNN/oneDNN/lib/libdnnl.so.2",
-    ]
-)

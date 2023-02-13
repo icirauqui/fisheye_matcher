@@ -115,7 +115,7 @@ void DrawEpipolarLines(const std::string &title, const cv::Mat F,
     cv::circle(outImg(rect2), points2[i], 3, color, -1, cv::LINE_AA);
   }
   ResizeAndDisplay(title, outImg, 0.5);
-  cv::waitKey(1);
+  cv::waitKey(0);
 }
 
 
@@ -159,7 +159,7 @@ void DrawEpipolarLines(const std::string &title, const cv::Mat F,
   }
 
   ResizeAndDisplay(title, outImg, 0.5);
-  cv::waitKey(1);
+  cv::waitKey(0);
 }
 
 
@@ -540,6 +540,202 @@ void AngMatcher::Match(std::string method,
 }
 
 
+
+void AngMatcher::CompareMatches(std::string method1, std::string method2,
+                                int report_level) {
+
+  std::cout << "==== Compare matches ====" << std::endl;
+
+  std::vector<cv::KeyPoint> kps1 = vkps1;
+  std::vector<cv::KeyPoint> kps2 = vkps2;
+  std::vector<cv::DMatch> matches1 = desc_matches_[method_map_[method1]];
+  std::vector<cv::DMatch> matches2 = desc_matches_[method_map_[method2]];
+
+  std::cout << "Matches 1 not 2 size " << matches_1_not_2.size() << std::endl;
+  std::cout << "Matches 2 not 1 size " << matches_2_not_1.size() << std::endl;
+  std::cout << "Matches 1 and 2 size " << matches_1_and_2.size() << std::endl;
+
+
+  std::vector<int> queryIdx = GetPointIndices(matches1, matches2);
+
+  std::vector<int> trainIdx1, trainIdx2;
+
+  std::cout << " - queryIdx length: " << queryIdx.size() << std::endl;
+
+  for (auto idx : queryIdx) {
+    // Find idx in matches1
+    auto it = std::find_if(matches1.begin(), matches1.end(), [idx](cv::DMatch m){return m.queryIdx == idx;});
+    if (it != matches1.end()){
+      trainIdx1.push_back(it->trainIdx);
+    } else {
+      trainIdx1.push_back(-1);
+    }
+
+    // Find idx in matches2
+    it = std::find_if(matches2.begin(), matches2.end(), [idx](cv::DMatch m){return m.queryIdx == idx;});
+    if (it != matches2.end()){
+      trainIdx2.push_back(it->trainIdx);
+    } else {
+      trainIdx2.push_back(-1);
+    }
+  }
+
+  if (report_level >= 1) {
+    std::cout << "      queryIdx\t" << method1 << "\t" << method2 << std::endl;
+    std::cout << "      --------\t-------\t-----" << std::endl;
+    for (int i = 0; i < queryIdx.size(); i++){
+      std::cout << "      " << queryIdx[i] << "\t" << trainIdx1[i] << "\t" << trainIdx2[i] << std::endl;
+    }
+    std::cout << "      --------\t-------\t-----" << std::endl;
+    std::cout << "             \t" << matches1.size() << "\t" << matches2.size() << std::endl;
+  }
+
+  // Build DMatch vector with matched in sampson but not in angle
+  for (unsigned int i=0; i<queryIdx.size(); i++){
+    int q = queryIdx[i];
+    if (trainIdx1[i] != -1 && trainIdx2[i] == -1){
+      auto it = std::find_if(matches1.begin(), matches1.end(), [q](cv::DMatch m){return m.queryIdx == q;});
+      if (it != matches1.end()){
+        matches_1_not_2.push_back(*it);
+      }
+    }
+  }
+
+
+  if (report_level >= 2) {
+    // Print matches_1_not_2
+    std::cout << "     Matches " << method1 << " not " << method2 << std::endl;
+    std::cout << "      imgIdx\tqueryIdx\ttrainIdx\tdistance" << std::endl;
+    std::cout << "      ------\t--------\t--------\t--------" << std::endl;
+    for (auto m : matches_1_not_2){
+      std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
+    }
+    std::cout << "      ------\t--------\t--------\t--------" << std::endl;
+  }
+
+
+  // Build DMAtch vector with matched in angle but not in sampson
+  for (unsigned int i=0; i<queryIdx.size(); i++){
+    int q = queryIdx[i];
+    if (trainIdx1[i] == -1 && trainIdx2[i] != -1){
+      auto it = std::find_if(matches2.begin(), matches2.end(), [q](cv::DMatch m){return m.queryIdx == q;});
+      if (it != matches2.end()){
+        matches_2_not_1.push_back(*it);
+      }
+    }
+  }
+
+
+  if (report_level >= 2) {
+    // Print matches_2_not_1
+    std::cout << "     Matches " << method2 << " not " << method1 << std::endl;
+    std::cout << "      imgIdx\tqueryIdx\ttrainIdx\tdistance" << std::endl;
+    std::cout << "      ------\t--------\t--------\t--------" << std::endl;
+    for (auto m : matches_2_not_1){
+      std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
+    }
+    std::cout << "      ------\t--------\t--------\t--------" << std::endl;
+  }
+
+
+  // Build DMatch vector with matched in angle and in sampson
+  for (unsigned int i=0; i<queryIdx.size(); i++){
+    int q = queryIdx[i];
+    if (trainIdx1[i] != -1 && trainIdx2[i] != -1){
+      auto it = std::find_if(matches2.begin(), matches2.end(), [q](cv::DMatch m){return m.queryIdx == q;});
+      if (it != matches2.end()){
+        matches_1_and_2.push_back(*it);
+      }
+    }
+  }
+
+  if (report_level >= 2) {
+    // Print matches_angle_and_sampson
+    std::cout << "     Matches " << method1 << " and " << method2 << std::endl;
+    std::cout << "      imgIdx\tqueryIdx\ttrainIdx\tdistance" << std::endl;
+    std::cout << "      ------\t--------\t--------\t--------" << std::endl;
+    for (auto m : matches_1_and_2){
+      std::cout << "      " << m.imgIdx << "\t" << m.queryIdx << "\t" << m.trainIdx << "\t" << m.distance << std::endl;
+    }
+    std::cout << "      ------\t--------\t--------\t--------" << std::endl;
+  }
+
+
+  // Check if targetIdx is different in matches_1_and_2 and store in matches_1_diff_2
+  for (unsigned int i=0; i<queryIdx.size(); i++){
+    int q = queryIdx[i];
+    if (trainIdx1[i] != -1 && trainIdx2[i] != -1){
+      auto it1 = std::find_if(matches1.begin(), matches1.end(), [q](cv::DMatch m){return m.queryIdx == q;});
+      auto it2 = std::find_if(matches2.begin(), matches2.end(), [q](cv::DMatch m){return m.queryIdx == q;});
+      if (it1 != matches2.end() && it2 != matches2.end() && it1->trainIdx != it2->trainIdx){
+        matches_1_diff_2_1.push_back(*it1);
+        matches_1_diff_2_2.push_back(*it2);
+      }
+    }
+  }
+
+  if (report_level >= 2) {
+    // Print matches_1_diff_2
+    std::cout << "     Matches " << method1 << " and " << method2 << " with different targetIdx" << std::endl;
+    std::cout << "      imgIdx\tqueryIdx\ttrainIdx1\ttrainIdx2" << std::endl;
+    std::cout << "      ------\t--------\t--------\t--------" << std::endl;
+    for (unsigned int i=0; i<matches_1_diff_2_1.size(); i++){
+      cv::DMatch m1 = matches_1_diff_2_1[i];
+      cv::DMatch m2 = matches_1_diff_2_2[i];
+      std::cout << "      " << m1.imgIdx << "\t" << m1.queryIdx << "\t" << m1.trainIdx << "\t" << m2.trainIdx << std::endl;
+    }
+    std::cout << "      ------\t--------\t--------\t--------" << std::endl;
+  }
+
+
+
+  // Draw segregation in a single image differentiating by color
+  // Join image 1 and image 2
+  cv::Mat imout_matches_segregation;
+  cv::hconcat(im1, im2, imout_matches_segregation);
+  
+  // Line thickness
+  int thickness = 1;
+  int radius = 6;
+  
+  // Draw matches in angle but not in sampson in green
+  for (auto m : matches_2_not_1){
+    cv::Point2f p1 = kps1[m.queryIdx].pt;
+    cv::Point2f p2 = kps2[m.trainIdx].pt;
+    p2.x += im1.cols;
+    cv::line(imout_matches_segregation, p1, p2, cv::Scalar(0,255,0), thickness);
+    // Draw circle around keypoint
+    cv::circle(imout_matches_segregation, p1, radius, cv::Scalar(0,255,0), thickness);
+    cv::circle(imout_matches_segregation, p2, radius, cv::Scalar(0,255,0), thickness);
+  }
+
+  // Draw matches in sampson but not in angle in red
+  for (auto m : matches_1_not_2){
+    cv::Point2f p1 = kps1[m.queryIdx].pt;
+    cv::Point2f p2 = kps2[m.trainIdx].pt;
+    p2.x += im1.cols;
+    cv::line(imout_matches_segregation, p1, p2, cv::Scalar(0,0,255), thickness);
+    // Draw circle around keypoint
+    cv::circle(imout_matches_segregation, p1, radius, cv::Scalar(0,0,255), thickness);
+    cv::circle(imout_matches_segregation, p2, radius, cv::Scalar(0,0,255), thickness);
+  }
+
+  // Draw matches in angle and in sampson in blue
+  for (auto m : matches_1_and_2){
+    cv::Point2f p1 = kps1[m.queryIdx].pt;
+    cv::Point2f p2 = kps2[m.trainIdx].pt;
+    p2.x += im1.cols;
+    cv::line(imout_matches_segregation, p1, p2, cv::Scalar(255,0,0), thickness);
+    // Draw circle around keypoint
+    cv::circle(imout_matches_segregation, p1, radius, cv::Scalar(255,0,0), thickness);
+    cv::circle(imout_matches_segregation, p2, radius, cv::Scalar(255,0,0), thickness);
+  }
+
+
+  ResizeAndDisplay("Matches Segregation", imout_matches_segregation, 0.5);
+}
+
+
 std::vector<std::vector<double>> AngMatcher::GetMatches(std::string method){
   return candidates_[method_map_[method]];
 }
@@ -580,9 +776,6 @@ void AngMatcher::ViewMatches(std::string method, std::string cust_name, float sc
   
   ResizeAndDisplay(cust_name, im_matches, scale);
 }
-
-
-
 
 
 
@@ -1018,6 +1211,33 @@ std::vector<cv::DMatch> AngMatcher::NNCandidates2(std::vector<std::vector<double
 
   return nn;
 }
+
+
+
+std::vector<int> AngMatcher::GetPointIndices(const std::vector<cv::DMatch> &matches1, const std::vector<cv::DMatch> &matches2) {
+  std::vector<int> queryIdx;
+
+  for (auto m : matches1){
+    auto it = std::find(queryIdx.begin(), queryIdx.end(), m.queryIdx);
+    if (it == queryIdx.end()){
+      queryIdx.push_back(m.queryIdx);
+    }
+  }
+
+  for (auto m : matches2){
+    auto it = std::find(queryIdx.begin(), queryIdx.end(), m.queryIdx);
+    if (it == queryIdx.end()){
+      queryIdx.push_back(m.queryIdx);
+    }
+  }
+
+  // Sort queryIdx
+  std::sort(queryIdx.begin(), queryIdx.end());
+
+  return queryIdx;
+}
+
+
 
 
 

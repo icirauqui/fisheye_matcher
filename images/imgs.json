@@ -1,6 +1,7 @@
 {
     "control": {
-        "num_pairs": 1
+        "num_pairs": 1,
+        "num_sequences": 1
     },
     "image_pairs": {
         "pair_0": {

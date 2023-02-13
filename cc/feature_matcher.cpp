@@ -247,6 +247,8 @@ cv::Mat FeatureMatcher::CompareMatches(cv::Mat &im1, cv::Mat &im2,
 
 
 
+
+
   // Draw segregation in a single image differentiating by color
   // Join image 1 and image 2
   cv::Mat imout_matches_segregation;

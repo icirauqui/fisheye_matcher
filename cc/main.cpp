@@ -20,68 +20,35 @@
 using namespace am;
 
 
-void onTrackbar(int, void*) {
-  // Nothing
-}
-
-
-int tr_sampson = 1;
-int tr_angle2d = 1;
-int tr_epiline = 1;
-int tr_angle3d = 1;
-
-void on_tr_sampson(int, void*) {
-
-}
-void on_tr_angle2d(int, void*) {
-
-}
-void on_tr_epiline(int, void*) {
-
-}
-void on_tr_angle3d(int, void*) {
-
-}
-
-
 
 
 int main() {
   bool bDraw = false;
 
-
   std::cout << " 1. Loading data" << std::endl; 
+
   std::cout << " 1.1 Camera parameters from cams.json" << std::endl;
-
-  Camera cam = Camera("../images/cams.json");
-  cv::Mat K = cam.K();
-  cv::Vec4f D = cam.D();
-
+  Camera cam = Camera("images/cams.json");
 
   std::cout << " 1.2. Images" << std::endl;
 
-  std::ifstream json_file("../images/images.json");
+  std::ifstream json_file("images/imgs.json");
   nlohmann::json json_data = nlohmann::json::parse(json_file);
-  nlohmann::json im_control = json_data["control"];
-  if (im_control.empty()) {
+  if (json_data.empty()) {
     std::cout << "Unable to load parameters from images.json" << std::endl;
   } else {
+    nlohmann::json im_control = json_data["control"];
     std::cout << "  " << im_control["num_pairs"] << " image pairs available" << std::endl;
   }
 
-
-  cv::Mat im1 = imread("../images/1.png", cv::IMREAD_COLOR);
-  cv::Mat im2 = imread("../images/2.png", cv::IMREAD_COLOR);
+  cv::Mat im1 = imread("images/1.png", cv::IMREAD_COLOR);
+  cv::Mat im2 = imread("images/2.png", cv::IMREAD_COLOR);
 
   float f = cam.FocalLength();
   cv::Point3f c1 = cam.CameraCenter();
   cv::Point3f c2 = cam.CameraCenter();
 
   
-
-
-
-
 
 
   std::cout << " 2. Detecting features" << std::endl;
@@ -108,7 +75,6 @@ int main() {
   kps2 = KeypointsInContour(contours2[0], kps2);
   f2d->compute(im1, kps1, desc1);
   f2d->compute(im2, kps2, desc2);
-
 
 
 
@@ -151,10 +117,6 @@ int main() {
   }
   cv::Mat F12 = cv::findFundamentalMat(points1, points2);
 
-  //DrawEpipolarLines("epip1",F12,im1,im2,points1,points2);
-  //cv::waitKey(0);
-
-
   std::cout << " 4.1 Decompose E" << std::endl;
   cv::Mat Kp = cam.K();
   Kp.convertTo(Kp, CV_64F);
@@ -163,15 +125,8 @@ int main() {
   cv::Mat R1, R2, t;
   cv::decomposeEssentialMat(E, R1, R2, t);
 
-  cv::Mat c1p = -R1.t() * t;
-
   cv::Point3f c1g(0.0, 0.0, 0.0);
   cv::Point3f c2g = c1g + cv::Point3f(t.at<double>(0, 0), t.at<double>(0, 1), t.at<double>(0, 2));
-
-
-
-
-
 
 
 
@@ -182,56 +137,41 @@ int main() {
   float th_sampson = 4.0;
   float th_angle2d = DegToRad(1.0);
   float th_angle3d = DegToRad(1.0);
-
-  //cv::namedWindow("Controls", cv::WINDOW_NORMAL);
-  //cv::createTrackbar("Sampson [  1  - 10 ]", "Controls", &tr_sampson, 10, on_tr_sampson);
-  //cv::createTrackbar("Angle2d [ 0.1 -  1 ]", "Controls", &tr_angle2d, 10, on_tr_angle2d);
-  //cv::createTrackbar("Epiline [  1  - 10 ]", "Controls", &tr_epiline, 10, on_tr_epiline);
-  //cv::createTrackbar("Angle3d [ 0.1 -  1 ]", "Controls", &tr_angle3d, 10, on_tr_angle3d);
-
-
   double th_sift = 100.0;
 
   // Match by distance threshold
-  AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, K);
+  AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, cam.K());
 
   am.Match("epiline", th_epiline, th_sift, true, false, false, false);
   am.Match("sampson", th_sampson, th_sift, true, false, false, false);
   am.Match("angle2d", th_angle2d, th_sift, true, false, false, false);
   am.Match("angle3d", th_angle3d, th_sift, true, false, false, false);
 
-  am.ViewMatches("epiline", "epiline desc matches", 0.5);
+  //am.ViewMatches("epiline", "epiline desc matches", 0.5);
 
 
 
 
-/*
-  std::cout << " 7. Compare matches" << std::endl;
+
+  std::cout << " 6. Compare matches" << std::endl;
+
+
+  am.CompareMatches("sampson", "angle2d", 1);
+
 
   FeatureMatcher fm(im1, im2);
-
-  cv::Mat imout_matches_segregation = fm.CompareMatches(
-    im1, im2, 
-    kps1, kps2,
-    matches_sampson, matches_angle2d, 
-    1);
-
-  ResizeAndDisplay("Matches Segregation", imout_matches_segregation, 0.5);
-
 
   cv::Mat imout_matches_candidates = fm.DrawCandidates(
     im1, im2, 
     kps1, kps2,
     F12,
-    matches_sampson, matches_angle2d, 
+    am.GetMatchesNN("sampson"), am.GetMatchesNN("angle2d"), 
     1);
-
-
 
   ResizeAndDisplay("Epipolar compare", imout_matches_candidates, 0.5);
 
 
-  */
+  
 
 
 

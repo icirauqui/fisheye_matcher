@@ -26,6 +26,9 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/images"
+        "${CMAKE_CURRENT_BINARY_DIR}/images" SYMBOLIC)
+
 add_executable(fisheye_matcher
   third_party/nlohmann/json.hpp
   cc/feature_matcher.cpp

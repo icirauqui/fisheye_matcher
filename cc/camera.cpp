@@ -6,7 +6,7 @@
 Camera::Camera(std::string path) {
   path_ = path;
 
-  std::ifstream json_file("../images/cams.json");
+  std::ifstream json_file(path_);
   nlohmann::json json_data = nlohmann::json::parse(json_file);
   nlohmann::json c1 = json_data["cam1"];
 

@@ -126,6 +126,9 @@ public:
              bool draw_inline = false, bool draw_final = false,
              bool bFiltered = false);
 
+  void CompareMatches(std::string method1, std::string method2,
+                      int report_level);
+
   std::vector<std::vector<double>> GetMatches(std::string method);
 
   std::vector<cv::DMatch> GetMatchesNN(std::string method);
@@ -136,10 +139,8 @@ public:
 
   void ViewMatches(std::string method, std::string cust_name = "View", float scale = 0.5);
 
-
-
-
-
+  
+  
 
 private: 
 
@@ -169,9 +170,12 @@ private:
 
   std::vector<cv::DMatch> NNCandidates2(std::vector<std::vector<double>> candidates, double th);
 
+  std::vector<int> GetPointIndices(const std::vector<cv::DMatch> &matches1, const std::vector<cv::DMatch> &matches2);
 
 
-  
+
+
+
   std::vector<cv::Point2f> kpoints1, kpoints2;
   std::vector<cv::KeyPoint> vkps1, vkps2;
   std::vector<cv::Vec3f> gmlines1, gmlines2;
@@ -186,6 +190,11 @@ private:
   cv::Mat t;
   cv::Mat K;
 
+  std::vector<cv::DMatch> matches_1_not_2;
+  std::vector<cv::DMatch> matches_2_not_1;
+  std::vector<cv::DMatch> matches_1_and_2;
+  std::vector<cv::DMatch> matches_1_diff_2_1;
+  std::vector<cv::DMatch> matches_1_diff_2_2;
 
 
   // Analysis resutls
