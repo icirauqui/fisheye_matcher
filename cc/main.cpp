@@ -78,12 +78,18 @@ int main() {
     }
 
     std::cout << "      " << im_control["num_pairs"] << " image pairs available" << std::endl;
+    for (unsigned int i = 0; i < image_pairs.size(); i++) {
+      std::cout << "       · " << image_pairs[i][0] << " - " << image_pairs[i][1] << std::endl;
+    }
   }
 
+  std::vector<std::vector<cv::Mat>> images;
   for (unsigned int i = 0; i < image_pairs.size(); i++) {
-    std::cout << "      " << image_pairs[i][0] << " - " << image_pairs[i][1] << std::endl;
+    std::vector<cv::Mat> pair;
+    pair.push_back(cv::imread(img_path + image_pairs[i][0], cv::IMREAD_COLOR));
+    pair.push_back(cv::imread(img_path + image_pairs[i][1], cv::IMREAD_COLOR));
+    images.push_back(pair);
   }
-  
 
   cv::Mat im1 = imread("images/s1_001.png", cv::IMREAD_COLOR);
   cv::Mat im2 = imread("images/s1_002.png", cv::IMREAD_COLOR);
