@@ -1,0 +1,242 @@
+INFO: Analyzed target //:main (1 packages loaded, 52 targets configured).
+INFO: Found 1 target...
+INFO: From Compiling cc/main.cpp:
+cc/main.cpp: In function 'int main()':
+cc/main.cpp:55:7: warning: variable 'num_pairs' set but not used [-Wunused-but-set-variable]
+   55 |   int num_pairs = 0;
+      |       ^~~~~~~~~
+cc/main.cpp:189:9: warning: unused variable 'th_epiline' [-Wunused-variable]
+  189 |   float th_epiline = 4.0;
+      |         ^~~~~~~~~~
+cc/main.cpp:191:9: warning: unused variable 'th_angle2d' [-Wunused-variable]
+  191 |   float th_angle2d = DegToRad(1.0);
+      |         ^~~~~~~~~~
+cc/main.cpp:192:9: warning: unused variable 'th_angle3d' [-Wunused-variable]
+  192 |   float th_angle3d = DegToRad(5.0);
+      |         ^~~~~~~~~~
+Target //:main up-to-date:
+  bazel-bin/main
+INFO: Elapsed time: 2.191s, Critical Path: 2.04s
+INFO: 5 processes: 3 internal, 2 linux-sandbox.
+INFO: Build completed successfully, 5 total actions
+INFO: Build completed successfully, 5 total actions
+ 1. Loading data
+ 1.1. Camera parameters from cams.json
+ 1.2. Images
+      15 image pairs available
+       · Seq_001_lossless_09444.png - Seq_001_lossless_09460.png
+       · Seq_001_lossless_09481.png - Seq_001_lossless_09502.png
+       · Seq_001_lossless_09515.png - Seq_001_lossless_09530.png
+       · Seq_001_lossless_09548.png - Seq_001_lossless_09559.png
+       · Seq_001_lossless_09576.png - Seq_001_lossless_09590.png
+       · Seq_001_lossless_09704.png - Seq_001_lossless_09722.png
+       · Seq_001_lossless_09728.png - Seq_001_lossless_09740.png
+       · Seq_001_lossless_09755.png - Seq_001_lossless_09771.png
+       · Seq_001_lossless_09789.png - Seq_001_lossless_09805.png
+       · Seq_001_lossless_09816.png - Seq_001_lossless_09827.png
+       · Seq_001_lossless_09841.png - Seq_001_lossless_09852.png
+       · Seq_001_lossless_09867.png - Seq_001_lossless_09881.png
+       · Seq_001_lossless_09893.png - Seq_001_lossless_09904.png
+       · Seq_001_lossless_09922.png - Seq_001_lossless_09935.png
+       · Seq_001_lossless_09947.png - Seq_001_lossless_09959.png
+ 2. Detecting features
+ 3. Matching features
+ 3.1. Knn   | 0.7 | 0.8 :	484	|	872
+ 3.2. Flann | 0.7 | 0.8 :	490	|	870
+ 3.3. BF                :	2293	|	
+ 4. Compute F and epilines
+ 4.1 Decompose E
+ 5. Compute matches by distance and angle
+    AngMatcher initialized. Guided matching methods:
+      - Epiline distance
+      - Sampson distance
+      - Angle 2D
+      - Angle 3D
+
+ 5.2. sampson all/nn/desc: 271249 / 55 / 55
+ 5.4. angle3d all/nn/desc: 3518907 / 6488 / 76
+ 6. Compare matches
+   =============================
+    Compare matches sampson vs angle3d
+      queryIdx	sampson	angle3d
+      --------	-------	-----
+      217	-1	313
+      260	-1	279
+      323	-1	736
+      496	-1	1248
+      523	677	677
+      552	736	-1
+      655	-1	543
+      713	856	856
+      804	-1	899
+      941	-1	414
+      1002	-1	977
+      1081	1339	1339
+      1082	1340	1340
+      1318	1657	1657
+      1403	1749	1749
+      1565	1944	1944
+      1575	2290	2290
+      1591	-1	1978
+      1679	2041	2041
+      1688	2059	2059
+      1789	2112	2112
+      1905	2291	2291
+      1911	2288	2288
+      1937	2287	2287
+      1979	2314	2314
+      2008	-1	2576
+      2022	2337	2337
+      2027	2386	2386
+      2083	2420	2420
+      2130	2493	2493
+      2147	2506	2506
+      2211	-1	2552
+      2216	2600	2600
+      2252	2587	2587
+      2299	2663	2663
+      2316	2644	2644
+      2434	2748	2748
+      2555	-1	2874
+      2627	2946	2946
+      2629	2940	2940
+      2638	2947	2947
+      2639	2978	2978
+      2643	2951	2951
+      2681	3006	3006
+      2685	3013	3013
+      2711	3035	3035
+      2723	3059	3059
+      2776	3097	3097
+      2791	3107	3107
+      2857	3166	3166
+      2863	3167	3167
+      2953	3278	3278
+      2992	3332	3332
+      3015	3321	3321
+      3131	3482	3482
+      3158	-1	3483
+      3159	3493	3493
+      3270	3622	3622
+      3657	4127	4127
+      3948	4429	4429
+      4077	4540	4540
+      4118	-1	4845
+      4167	4625	4625
+      4285	-1	4707
+      4297	4735	4735
+      4357	4797	4797
+      4542	-1	4972
+      4982	5401	5522
+      5000	-1	5233
+      5081	-1	5401
+      5503	6092	6092
+      5759	6419	6419
+      6261	6964	6964
+      6358	-1	7252
+      6381	-1	7548
+      6478	-1	7603
+      6495	-1	7531
+      --------	-------	-----
+             	55	76
+      --------	-------	-----
+     Matches sampson not angle3d
+      imgIdx	queryIdx	trainIdx	distance
+      ------	--------	--------	--------
+      -1	552	736	72.3602
+      ------	--------	--------	--------
+     Matches angle3d not sampson
+      imgIdx	queryIdx	trainIdx	distance
+      ------	--------	--------	--------
+      -1	217	313	94.5516
+      -1	260	279	75.6505
+      -1	323	736	68.4763
+      -1	496	1248	98.6813
+      -1	655	543	65.238
+      -1	804	899	84.119
+      -1	941	414	99.7346
+      -1	1002	977	88.7356
+      -1	1591	1978	98.4886
+      -1	2008	2576	51.6236
+      -1	2211	2552	96.8452
+      -1	2555	2874	53.5257
+      -1	3158	3483	86.151
+      -1	4118	4845	91.8423
+      -1	4285	4707	90.6035
+      -1	4542	4972	95.6033
+      -1	5000	5233	96.4261
+      -1	5081	5401	54.8088
+      -1	6358	7252	51.9615
+      -1	6381	7548	82.9578
+      -1	6478	7603	86.151
+      -1	6495	7531	96.2393
+      ------	--------	--------	--------
+     Matches sampson and angle3d
+      imgIdx	queryIdx	trainIdx	distance
+      ------	--------	--------	--------
+      -1	523	677	85.3112
+      -1	713	856	97.9898
+      -1	1081	1339	72.111
+      -1	1082	1340	81.768
+      -1	1318	1657	80.7589
+      -1	1403	1749	90.0611
+      -1	1565	1944	96.6851
+      -1	1575	2290	86.8389
+      -1	1679	2041	77.6724
+      -1	1688	2059	93.659
+      -1	1789	2112	69.0869
+      -1	1905	2291	74.2698
+      -1	1911	2288	85.2408
+      -1	1937	2287	63.8905
+      -1	1979	2314	88.3968
+      -1	2022	2337	89.7831
+      -1	2027	2386	62.506
+      -1	2083	2420	60.0083
+      -1	2130	2493	94.747
+      -1	2147	2506	63.2139
+      -1	2216	2600	92.8332
+      -1	2252	2587	84.3327
+      -1	2299	2663	78.7147
+      -1	2316	2644	94.101
+      -1	2434	2748	96.4158
+      -1	2627	2946	91.2085
+      -1	2629	2940	93.4291
+      -1	2638	2947	80.895
+      -1	2639	2978	99.5239
+      -1	2643	2951	91.7442
+      -1	2681	3006	87
+      -1	2685	3013	91.7061
+      -1	2711	3035	73.6614
+      -1	2723	3059	59.5147
+      -1	2776	3097	76.7724
+      -1	2791	3107	88.7919
+      -1	2857	3166	49.6991
+      -1	2863	3167	58.9067
+      -1	2953	3278	69.9285
+      -1	2992	3332	96.4417
+      -1	3015	3321	80.3057
+      -1	3131	3482	83.66
+      -1	3159	3493	98.8534
+      -1	3270	3622	93.5361
+      -1	3657	4127	85.8895
+      -1	3948	4429	55.6597
+      -1	4077	4540	92.7847
+      -1	4167	4625	72.6774
+      -1	4297	4735	63.3798
+      -1	4357	4797	90.0611
+      -1	4982	5522	97.4731
+      -1	5503	6092	90.3161
+      -1	5759	6419	83.5464
+      -1	6261	6964	88.4477
+      ------	--------	--------	--------
+     Matches sampson and angle3d with different targetIdx
+      imgIdx	queryIdx	trainIdx1	trainIdx2
+      ------	--------	--------	--------
+      -1	4982	5401	5522
+      ------	--------	--------	--------
+    Matches 1 not 2 size  1
+    Matches 2 not 1 size  22
+    Matches 1 and 2 size  54
+    Matches 1 diff 2 size 1
+/home/icirauqui/workspace_phd/fisheye_matcher/images/out/Matches_Segregation__sampson_vs_angle3d.png
+ 7. Compare matches for specific query keypoint

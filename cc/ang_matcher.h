@@ -103,13 +103,31 @@ float DistanceSampson(const cv::Point2f &pt1, const cv::Point2f &pt2, cv::Mat F)
 cv::Point3f ptg(cv::Point3f c, cv::Point3f cg, cv::Point2f p, float f);
 
 
-void DrawCandidates(cv::Mat im1, cv::Mat im2, cv::Vec3f line, cv::Point2f point, std::vector<cv::Point2f> points, std::string name = "Candidates");
+void DrawCandidates(cv::Mat im1, cv::Mat im2, 
+                    cv::Vec3f line, cv::Point2f point, std::vector<cv::Point2f> points, 
+                    std::string name = "Candidates");
 
 
-void DrawCandidates(cv::Mat im12, std::vector<cv::Vec3f> line, cv::Point2f point, std::vector<std::vector<cv::Point2f>> points, std::string name = "Candidates");
+void DrawCandidates(cv::Mat im1, cv::Mat im2, 
+                    cv::Vec3f line, cv::Point2f point, cv::Point2f point2, std::vector<cv::Point2f> points,  
+                    std::string name = "Candidates");
+
+
+void DrawCandidates(cv::Mat im12, 
+                    std::vector<cv::Vec3f> line, cv::Point2f point, std::vector<std::vector<cv::Point2f>> points, 
+                    std::string name = "Candidates");
 
 
 cv::Point3f ConvertToWorldCoords(cv::Point2f &p, cv::Mat &R, cv::Mat t, cv::Mat &K);
+
+
+cv::Point2f ConvertToImageCoords(cv::Point3f &p, cv::Mat &R, cv::Mat t, cv::Mat &K);
+
+
+cv::Point2f UndistortPointRadial(cv::Point2f &p, cv::Mat &K, cv::Mat &D);
+
+
+cv::Point2f DistortPointRadial(cv::Point2f &p, cv::Mat &K, cv::Mat &D);
 
 
 int CountPositive(const std::vector<std::vector<double>> &v);
@@ -180,7 +198,11 @@ public:
 
   std::vector<cv::DMatch> GetMatchesDesc(std::string method);
 
+  int MethodMap(std::string method);
+
   void ViewCandidates(std::vector<std::vector<double>> candidates, int kp, std::string cust_name = "View");
+
+  void ViewCandidates(std::string method, int kp, std::string cust_name = "View");
 
   void ViewMatches(std::string method, std::string cust_name = "View", float scale = 0.5);
 
@@ -263,7 +285,7 @@ private:
 
 
 
-void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor = 1.0, int report_level = 0, bool wait = false);
+void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor = 1.0, int report_level = 0, bool wait = false, cv::Point2f co = cv::Point2f(0,0));
 void ResizeAndDisplay(const std::string &title, const std::vector<cv::Mat> &imgs, float factor);
 
 

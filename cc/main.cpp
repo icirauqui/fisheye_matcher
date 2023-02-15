@@ -189,16 +189,18 @@ int main() {
   float th_epiline = 4.0;
   float th_sampson = 4.0;
   float th_angle2d = DegToRad(1.0);
-  float th_angle3d = DegToRad(1.0);
+  float th_angle3d = DegToRad(5.0);
   double th_sift = 100.0;
 
   // Match by distance threshold
   AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, cam.K());
 
-  am.Match("epiline", th_epiline, th_sift, cross_check, draw_inline, draw_global);
+  //am.Match("epiline", th_epiline, th_sift, cross_check, draw_inline, draw_global);
   am.Match("sampson", th_sampson, th_sift, cross_check, draw_inline, draw_global);
-  am.Match("angle2d", th_angle2d, th_sift, cross_check, draw_inline, draw_global);
-  am.Match("angle3d", th_angle3d, th_sift, cross_check, draw_inline, draw_global);
+  //am.Match("angle2d", th_angle2d, th_sift, cross_check, draw_inline, draw_global);
+  //am.Match("angle3d", th_angle3d, th_sift, cross_check, draw_inline, draw_global);
+  //am.Match("angle3d", DegToRad(1.0), th_sift, cross_check, draw_inline, draw_global);
+  am.Match("angle3d", DegToRad(4.0), th_sift, cross_check, draw_inline, draw_global);
 
   //am.ViewMatches("epiline", "epiline desc matches", 0.5);
 
@@ -208,12 +210,51 @@ int main() {
 
   std::cout << " 6. Compare matches" << std::endl;
   int report_level = 3;
-  am.CompareMatches("epiline", "sampson", report_level);
-  am.CompareMatches("epiline", "angle2d", report_level);
-  am.CompareMatches("epiline", "angle3d", report_level);
-  am.CompareMatches("sampson", "angle2d", report_level);
+  //am.CompareMatches("epiline", "sampson", report_level);
+  //am.CompareMatches("epiline", "angle2d", report_level);
+  //am.CompareMatches("epiline", "angle3d", report_level);
+  //am.CompareMatches("sampson", "angle2d", report_level);
   am.CompareMatches("sampson", "angle3d", report_level);
-  am.CompareMatches("angle2d", "angle3d", report_level);
+  //am.CompareMatches("angle2d", "angle3d", report_level);
+
+
+  std::cout << " 7. Compare matches for specific query keypoint" << std::endl;
+  am.ViewCandidates("sampson",  32, "sampson");
+  am.ViewCandidates("sampson", 395, "sampson");
+  am.ViewCandidates("sampson", 409, "sampson");
+  am.ViewCandidates("sampson", 430, "sampson");
+  am.ViewCandidates("sampson", 473, "sampson");
+  am.ViewCandidates("sampson", 642, "sampson");
+  am.ViewCandidates("sampson", 644, "sampson");
+  am.ViewCandidates("angle3d",  32, "angle3d");
+  am.ViewCandidates("angle3d", 395, "angle3d");
+  am.ViewCandidates("angle3d", 409, "angle3d");
+  am.ViewCandidates("angle3d", 430, "angle3d");
+  am.ViewCandidates("angle3d", 473, "angle3d");
+  am.ViewCandidates("angle3d", 642, "angle3d");
+  am.ViewCandidates("angle3d", 644, "angle3d");
+
+
+
+
+
+
+  //am.ViewCandidates("epiline",  217, "epiline");
+  //am.ViewCandidates("epiline",  804, "epiline");
+  //am.ViewCandidates("epiline", 3158, "epiline");
+  //am.ViewCandidates("epiline", 6358, "epiline");
+  //am.ViewCandidates("angle2d",  217, "angle2d");
+  //am.ViewCandidates("angle2d",  804, "angle2d");
+  //am.ViewCandidates("angle2d", 3158, "angle2d");
+  //am.ViewCandidates("angle2d", 6358, "angle2d");
+
+  //am.ViewCandidates("sampson", 4982, "sampson");
+  //am.ViewCandidates("sampson", 4982, "sampson");
+  //am.ViewCandidates("angle2d", 5081, "angle2d");
+  //am.ViewCandidates("angle2d", 5081, "angle2d");
+
+
+
 
 
 /*

@@ -443,7 +443,9 @@ cv::Point3f ptg(cv::Point3f c, cv::Point3f cg, cv::Point2f p, float f) {
 
 
 
-void DrawCandidates(cv::Mat im1, cv::Mat im2, cv::Vec3f line, cv::Point2f point, std::vector<cv::Point2f> points, std::string name) {
+void DrawCandidates(cv::Mat im1, cv::Mat im2, 
+                    cv::Vec3f line, cv::Point2f point, std::vector<cv::Point2f> points, 
+                    std::string name) {
   //Concatenate images
   cv::Mat im12;
   cv::hconcat(im1, im2, im12);
@@ -470,7 +472,44 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2, cv::Vec3f line, cv::Point2f point,
 
 
 
-void DrawCandidates(cv::Mat im12, std::vector<cv::Vec3f> line, cv::Point2f point, std::vector<std::vector<cv::Point2f>> points, std::string name) {
+void DrawCandidates(cv::Mat im1, cv::Mat im2, 
+                    cv::Vec3f line, cv::Point2f point, cv::Point2f point2, std::vector<cv::Point2f> points, 
+                    std::string name) {
+  //Concatenate images
+  cv::Mat im12;
+  cv::hconcat(im1, im2, im12);
+
+  cv::Point2f pt0(0, -line[2] / line[1]);
+  cv::Point2f pt1(im2.cols, -(line[2] + line[0] * im2.cols) / line[1]);
+  pt0.x += im1.cols;
+  pt1.x += im1.cols;
+  cv::line(im12, pt0, pt1, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+
+  // Draw point in image 1
+  cv::circle(im12, point, 8, cv::Scalar(0, 255, 0), 2, cv::LINE_AA);
+
+  for (size_t i = 0; i < points.size(); i++){
+    cv::Point2f pt = points[i];
+    pt.x += im1.cols;
+    cv::circle(im12, pt, 8, cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+  }
+
+  // If point2 is not null, draw it
+  if (point2.x != 0 && point2.y != 0) {
+    point2.x += im1.cols;
+    cv::circle(im12, point2, 8, cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+  }
+
+  ResizeAndDisplay(name, im12, 0.5, true);
+  //cv::waitKey(0);
+
+}
+
+
+
+void DrawCandidates(cv::Mat im12, 
+                    std::vector<cv::Vec3f> line, cv::Point2f point, std::vector<std::vector<cv::Point2f>> points, 
+                    std::string name) {
   //Concatenate images
   /*
   cv::Point2f pt0(0, -line[2] / line[1]);
@@ -511,6 +550,41 @@ cv::Point3f ConvertToWorldCoords(cv::Point2f &p, cv::Mat &R, cv::Mat t, cv::Mat 
 
   return cv::Point3f(p_world.at<float>(0), p_world.at<float>(1), p_world.at<float>(2));
 }
+
+
+cv::Point2f ConvertToImageCoords(cv::Point3f &p, cv::Mat &R, cv::Mat t, cv::Mat &K) {  
+  // Point to homogeneous
+  cv::Mat p_hom = (cv::Mat_<float>(4, 1) << p.x, p.y, p.z, 1);
+
+  // Convert to camera coordinates
+  cv::Mat p_cam = R.inv() * (p_hom - t);  
+  p_cam.convertTo(p_cam, 5);
+
+  // Convert to image coordinates
+  cv::Mat p_img = K * p_cam;
+  p_img.convertTo(p_img, 5);
+
+  return cv::Point2f(p_img.at<float>(0) / p_img.at<float>(2), p_img.at<float>(1) / p_img.at<float>(2));
+}
+
+
+cv::Point2f UndistortPointRadial(cv::Point2f &p, cv::Mat &K, cv::Mat &D) {
+  cv::Mat p_hom = (cv::Mat_<float>(3, 1) << p.x, p.y, 1);
+  cv::Mat p_undist = p_hom.clone();
+  cv::undistortPoints(p_hom, p_undist, K, D, cv::Mat(), K);
+  return cv::Point2f(p_undist.at<float>(0), p_undist.at<float>(1));
+}
+
+
+cv::Point2f DistortPointRadial(cv::Point2f &p, cv::Mat &K, cv::Mat &D) {
+  cv::Mat p_hom = (cv::Mat_<float>(3, 1) << p.x, p.y, 1);
+  cv::Mat p_dist = p_hom.clone();
+  cv::projectPoints(p_hom, cv::Mat::zeros(3, 1, CV_32F), cv::Mat::zeros(3, 1, CV_32F), K, D, p_dist);
+  return cv::Point2f(p_dist.at<float>(0), p_dist.at<float>(1));
+}
+
+
+
 
 
 
@@ -937,7 +1011,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
 
 
   std::string frame_title = "Matches Segregation: " + method1 + " vs " + method2;
-  ResizeAndDisplay(frame_title, imout_matches_segregation, 0.5, report_level == 3);
+  ResizeAndDisplay(frame_title, imout_matches_segregation, 0.5, report_level == 3, false, cv::Point2f(co2.x + im1.cols, co2.y));
 }
 
 
@@ -956,6 +1030,11 @@ std::vector<cv::DMatch> AngMatcher::GetMatchesDesc(std::string method){
 }
 
 
+int AngMatcher::MethodMap(std::string method){
+  return method_map_[method];
+}
+
+
 void AngMatcher::ViewCandidates(std::vector<std::vector<double>> candidates, int kp, std::string cust_name) {
   cv::Point3f pt0(0, -gmlines1[kp][2] / gmlines1[kp][1], 0.);
   cv::Point3f pt1(lx, -(gmlines1[kp][2] + gmlines1[kp][0] * lx) / gmlines1[kp][1], 0.);
@@ -971,6 +1050,37 @@ void AngMatcher::ViewCandidates(std::vector<std::vector<double>> candidates, int
 
   std::string name = cust_name + " " + std::to_string(kp + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
   DrawCandidates(im1, im2, line, kpoints1[kp], points, name);
+}
+
+
+void AngMatcher::ViewCandidates(std::string method, int kp, std::string cust_name) {
+  cv::Point3f pt0(0, -gmlines1[kp][2] / gmlines1[kp][1], 0.);
+  cv::Point3f pt1(lx, -(gmlines1[kp][2] + gmlines1[kp][0] * lx) / gmlines1[kp][1], 0.);
+  cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
+
+  std::vector<cv::Point2f> points;
+  for (size_t i = 0; i < candidates_[method_map_[method]][kp].size(); i++) {
+    if (candidates_[method_map_[method]][kp][i] > 0.0) {
+      cv::Point2f pt(kpoints2[i].x, kpoints2[i].y);
+      points.push_back(pt);
+    }
+  }
+
+  int kp2 = -1;
+  for (size_t i = 0; i < desc_matches_[method_map_[method]].size(); i++) {
+    if (desc_matches_[method_map_[method]][i].queryIdx == kp) {
+      kp2 = desc_matches_[method_map_[method]][i].trainIdx;
+      break;
+    }
+  }
+
+  cv::Point2f pt2(0, 0);
+  if (kp2 >= 0) {
+    pt2 = cv::Point2f(kpoints2[kp2].x, kpoints2[kp2].y);
+  }
+
+  std::string name = cust_name + " " + std::to_string(kp + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
+  DrawCandidates(im1, im2, line, kpoints1[kp], pt2, points, name);
 }
 
 
@@ -1502,9 +1612,26 @@ std::vector<int> AngMatcher::GetPointIndices(const std::vector<cv::DMatch> &matc
 
 
 
-void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor, int report_level, bool wait) {
+void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor, int report_level, bool wait, cv::Point2f co) {
   cv::Mat out1;
-  cv::resize(img1, out1, cv::Size(), factor, factor);
+
+
+  if (report_level > 1) {
+    cv::Mat out_tmp = img1.clone();
+    // Draw Camera Center as a blue cross
+    int cross_size = 10;
+    cv::line(out_tmp, cv::Point(co.x - cross_size, co.y), cv::Point(co.x + cross_size, co.y), cv::Scalar(255, 0, 0), 2);
+    cv::line(out_tmp, cv::Point(co.x, co.y - cross_size), cv::Point(co.x, co.y + cross_size), cv::Scalar(255, 0, 0), 2);
+    cv::resize(out_tmp, out1, cv::Size(), factor, factor);
+  } else {
+    cv::resize(img1, out1, cv::Size(), factor, factor);
+  }
+
+
+
+  //cv::resize(img1, out1, cv::Size(), factor, factor);
+
+
 
   if (wait) {
     cv::namedWindow(title);

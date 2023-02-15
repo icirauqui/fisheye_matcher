@@ -43,3 +43,17 @@ http_archive(
       strip_prefix = "opencv_contrib-4.7.0",
       urls = ["https://github.com/opencv/opencv_contrib/archive/refs/tags/4.7.0.tar.gz"],
 )
+
+
+http_archive(
+    name = "aabtop_rules_qt",
+    strip_prefix = "rules_qt-4703da94a8a996e9372e6ec3d33bb082a2882e8d",
+    url = "https://github.com/aabtop/rules_qt/archive/4703da94a8a996e9372e6ec3d33bb082a2882e8d.zip",
+    sha256 = "ba7912fe87a6a389bb83f83baa1d89d9f899abf1739b3aaf972169d934da6c9b",
+)
+
+
+load("@aabtop_rules_qt//:rules_qt_deps1.bzl", "rules_qt_deps1")
+rules_qt_deps1()
+load("@aabtop_rules_qt//:rules_qt_deps2.bzl", "rules_qt_deps2")
+rules_qt_deps2()

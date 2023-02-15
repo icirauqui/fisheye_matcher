@@ -1,4 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@aabtop_rules_qt//:qt_rules.bzl", "qt_cc_library", "qt_cc_binary", "qt_resource")
 
 
 cc_library(
@@ -55,4 +56,25 @@ cc_binary(
     data = glob(["images/**"]),
     #linkstatic=True,
     visibility = ["//visibility:public"],
+)
+
+
+
+qt_cc_binary(
+  name = "mainqt",
+  srcs = [
+    "cc/qt/mainqt.cc",
+  ],
+  deps = [
+    ":main_window",
+  ],
+)
+
+qt_cc_library(
+  name = "main_window",
+  srcs = [
+    "cc/qt/main_window.cc",
+  ],
+  hdr = "cc/qt/main_window.h",
+  ui_src = "cc/qt/main_window.ui",
 )
