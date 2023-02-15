@@ -937,7 +937,7 @@ void AngMatcher::CompareMatches(std::string method1, std::string method2,
 
 
   std::string frame_title = "Matches Segregation: " + method1 + " vs " + method2;
-  ResizeAndDisplay(frame_title, imout_matches_segregation, 0.5);
+  ResizeAndDisplay(frame_title, imout_matches_segregation, 0.5, report_level == 3);
 }
 
 
@@ -1502,7 +1502,7 @@ std::vector<int> AngMatcher::GetPointIndices(const std::vector<cv::DMatch> &matc
 
 
 
-void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor, bool wait) {
+void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor, int report_level, bool wait) {
   cv::Mat out1;
   cv::resize(img1, out1, cv::Size(), factor, factor);
 
@@ -1516,12 +1516,14 @@ void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float facto
   }
 
   // Save image
-  std::string filename = title + ".png";
-  std::string out_path = "/home/icirauqui/workspace_phd/fisheye_matcher/images/out/" + filename;
-  std::replace(out_path.begin(), out_path.end(), ' ', '_');
-  std::replace(out_path.begin(), out_path.end(), ':', '_');
-  std::cout << out_path << std::endl;
-  cv::imwrite(out_path, out1);
+  if (report_level > 0) {
+    std::string filename = title + ".png";
+    std::string out_path = "/home/icirauqui/workspace_phd/fisheye_matcher/images/out/" + filename;
+    std::replace(out_path.begin(), out_path.end(), ' ', '_');
+    std::replace(out_path.begin(), out_path.end(), ':', '_');
+    std::cout << out_path << std::endl;
+    cv::imwrite(out_path, out1);
+  }
 }
 
 

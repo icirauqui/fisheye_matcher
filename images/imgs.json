@@ -1,7 +1,8 @@
 {
     "control": {
         "num_pairs": 1,
-        "num_sequences": 1
+        "num_sequences": 1,
+        "path": "images/in/"
     },
     "image_pairs": {
         "pair_0": {

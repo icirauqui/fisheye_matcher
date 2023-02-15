@@ -263,7 +263,7 @@ private:
 
 
 
-void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor = 1.0, bool wait = false);
+void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float factor = 1.0, int report_level = 0, bool wait = false);
 void ResizeAndDisplay(const std::string &title, const std::vector<cv::Mat> &imgs, float factor);
 
 

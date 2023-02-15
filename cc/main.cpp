@@ -47,22 +47,46 @@ using namespace am;
 int main() {
   std::cout << " 1. Loading data" << std::endl; 
 
-  std::cout << " 1.1 Camera parameters from cams.json" << std::endl;
+  std::cout << " 1.1. Camera parameters from cams.json" << std::endl;
   Camera cam = Camera("images/cams.json");
 
   std::cout << " 1.2. Images" << std::endl;
 
-  std::ifstream json_file("images/imgs.json");
+  int num_pairs = 0;
+  std::string img_path = "";
+  std::vector<std::vector<std::string>> image_pairs;
+
+  //std::ifstream json_file("images/imgs.json");
+  std::ifstream json_file("images/in/pairs.json");
   nlohmann::json json_data = nlohmann::json::parse(json_file);
   if (json_data.empty()) {
     std::cout << "Unable to load parameters from images.json" << std::endl;
   } else {
     nlohmann::json im_control = json_data["control"];
-    std::cout << "  " << im_control["num_pairs"] << " image pairs available" << std::endl;
+    num_pairs = im_control["num_pairs"];
+    img_path = im_control["path"];
+
+    nlohmann::json im_pairs = json_data["image_pairs"];
+
+    if (!im_pairs.empty()) {
+      for (auto i : im_pairs) {
+        std::vector<std::string> pair;
+        pair.push_back(i[0]);
+        pair.push_back(i[1]);
+        image_pairs.push_back(pair);
+      }
+    }
+
+    std::cout << "      " << im_control["num_pairs"] << " image pairs available" << std::endl;
   }
 
-  cv::Mat im1 = imread("images/1.png", cv::IMREAD_COLOR);
-  cv::Mat im2 = imread("images/2.png", cv::IMREAD_COLOR);
+  for (unsigned int i = 0; i < image_pairs.size(); i++) {
+    std::cout << "      " << image_pairs[i][0] << " - " << image_pairs[i][1] << std::endl;
+  }
+  
+
+  cv::Mat im1 = imread("images/s1_001.png", cv::IMREAD_COLOR);
+  cv::Mat im2 = imread("images/s1_002.png", cv::IMREAD_COLOR);
 
   float f = cam.FocalLength();
   cv::Point3f c1 = cam.CameraCenter();
@@ -177,7 +201,7 @@ int main() {
 
 
   std::cout << " 6. Compare matches" << std::endl;
-  int report_level = 2;
+  int report_level = 3;
   am.CompareMatches("epiline", "sampson", report_level);
   am.CompareMatches("epiline", "angle2d", report_level);
   am.CompareMatches("epiline", "angle3d", report_level);
