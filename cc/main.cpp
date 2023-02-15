@@ -2,6 +2,8 @@
 #include <fstream>
 #include <math.h>
 
+#include <cstdlib>
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -14,6 +16,27 @@
 #include "../third_party/nlohmann/json.hpp"
 #include "camera.h"
 
+
+
+
+int menu() {
+  int option = 0;
+  std::cout << std::endl;
+  std::cout << " Select display option: " << std::endl;
+  std::cout << "  1. Epiline - Sampson" << std::endl;
+  std::cout << "  2. Epiline - Angle2D" << std::endl;
+  std::cout << "  3. Epiline - Angle3D" << std::endl;
+  std::cout << "  4. Sampson - Angle2D" << std::endl;
+  std::cout << "  5. Epiline - Angle3D" << std::endl;
+  std::cout << "  6. Angle2D - Angle3D" << std::endl;
+  std::cout << "  7. All" << std::endl;
+  std::cout << "  9. Exit" << std::endl << std::endl;
+
+  std::cout << " Option: ";
+  std::cin >> option;
+  std::cout << std::endl;
+  return option;
+}
 
 
 using namespace am;
@@ -154,23 +177,50 @@ int main() {
 
 
   std::cout << " 6. Compare matches" << std::endl;
-  am.CompareMatches("epiline", "sampson", 1);
-  am.CompareMatches("epiline", "angle2d", 1);
-  am.CompareMatches("epiline", "angle3d", 1);
-
-  am.CompareMatches("sampson", "angle2d", 1);
-  am.CompareMatches("sampson", "angle3d", 1);
-
-  am.CompareMatches("angle2d", "angle3d", 1);
-
+  int report_level = 2;
+  am.CompareMatches("epiline", "sampson", report_level);
+  am.CompareMatches("epiline", "angle2d", report_level);
+  am.CompareMatches("epiline", "angle3d", report_level);
+  am.CompareMatches("sampson", "angle2d", report_level);
+  am.CompareMatches("sampson", "angle3d", report_level);
+  am.CompareMatches("angle2d", "angle3d", report_level);
 
 
+/*
+  int option = 0;
+  while (option != 9) {
 
-  
+    option = menu();
+    system("clear");
 
+    cv::destroyAllWindows();
 
+    if (option == 1) 
+      am.CompareMatches("epiline", "sampson", report_level);
+    else if (option == 2) 
+      am.CompareMatches("epiline", "angle2d", report_level);
+    else if (option == 3) 
+      am.CompareMatches("epiline", "angle3d", report_level);
+    else if (option == 4) 
+      am.CompareMatches("sampson", "angle2d", report_level);
+    else if (option == 5) 
+      am.CompareMatches("sampson", "angle3d", report_level);
+    else if (option == 6) 
+      am.CompareMatches("angle2d", "angle3d", report_level);
+    else if (option == 7) {
+      am.CompareMatches("epiline", "sampson", report_level);
+      am.CompareMatches("epiline", "angle2d", report_level);
+      am.CompareMatches("epiline", "angle3d", report_level);
+      am.CompareMatches("sampson", "angle2d", report_level);
+      am.CompareMatches("sampson", "angle3d", report_level);
+      am.CompareMatches("angle2d", "angle3d", report_level);
+    }
+    else if (option == 9) 
+      break;
 
-
+    cv::waitKey(0);
+  }
+*/
 
 
 

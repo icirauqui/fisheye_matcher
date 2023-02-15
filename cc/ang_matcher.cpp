@@ -384,6 +384,31 @@ float AngleLinePlane(cv::Vec4f pi, cv::Vec3f v) {
 
 
 
+cv::Vec4f PlaneFromCameraPose(cv::Mat R, cv::Mat t) {
+  cv::Mat Rinv = R.inv();
+  cv::Mat tinv = -Rinv * t;
+
+  cv::Vec4f piVec(Rinv.at<float>(2, 0), Rinv.at<float>(2, 1), Rinv.at<float>(2, 2),
+                  tinv.at<float>(2, 0));
+  return piVec;
+}
+
+
+
+cv::Vec3f Intersect2Planes(cv::Vec4f pi1, cv::Vec4f pi2) {
+  cv::Vec3f n1(pi1(0), pi1(1), pi1(2));
+  cv::Vec3f n2(pi2(0), pi2(1), pi2(2));
+
+  cv::Vec3f n1n2 = n1.cross(n2);
+  cv::Vec3f n1n2n1 = n1n2.cross(n1);
+  cv::Vec3f n2n1n2 = n2.cross(n1n2);
+
+  cv::Vec3f intersect = (pi1(3) * n1n2n1 + pi2(3) * n2n1n2) / (n1n2.dot(n1n2));
+  return intersect;
+}
+
+
+
 float DistancePointLine(const cv::Point2f point, const cv::Vec3f &line) {
   return std::fabs(line(0) * point.x + line(1) * point.y + line(2)) / std::sqrt(line(0) * line(0) + line(1) * line(1));
 }
@@ -440,6 +465,32 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2, cv::Vec3f line, cv::Point2f point,
 
   ResizeAndDisplay(name, im12, 0.5, true);
   //cv::waitKey(0);
+
+}
+
+
+
+void DrawCandidates(cv::Mat im12, std::vector<cv::Vec3f> line, cv::Point2f point, std::vector<std::vector<cv::Point2f>> points, std::string name) {
+  //Concatenate images
+  /*
+  cv::Point2f pt0(0, -line[2] / line[1]);
+  cv::Point2f pt1(im2.cols, -(line[2] + line[0] * im2.cols) / line[1]);
+  pt0.x += im1.cols;
+  pt1.x += im1.cols;
+  cv::line(im12, pt0, pt1, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+
+  // Draw point in image 1
+  cv::circle(im12, point, 8, cv::Scalar(0, 255, 0), 2, cv::LINE_AA);
+
+  for (size_t i = 0; i < points.size(); i++){
+    cv::Point2f pt = points[i];
+    pt.x += im1.cols;
+    cv::circle(im12, pt, 8, cv::Scalar(0, 0, 255), 2, cv::LINE_AA);
+  }
+
+  ResizeAndDisplay(name, im12, 0.5, true);
+  //cv::waitKey(0);
+  */
 
 }
 
@@ -932,6 +983,57 @@ void AngMatcher::ViewMatches(std::string method, std::string cust_name, float sc
 }
 
 
+void AngMatcher::ViewKpResults(std::string method1, std::string method2, int kp, std::string cust_name) {
+
+  std::vector<cv::Vec3f> lines;
+  std::vector<std::vector<cv::Point2d>> points;
+
+  // Record lines in second image
+  // Epipolar distance and Sampson both use the epipolar line of the keypoint in the first image
+  // Angle thresholding uses the epipolar line in Angle2D 
+  cv::Point3f pt0(0, -gmlines1[kp][2] / gmlines1[kp][1], 0.);
+  cv::Point3f pt1(lx, -(gmlines1[kp][2] + gmlines1[kp][0] * lx) / gmlines1[kp][1], 0.);
+  cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
+  lines.push_back(line);
+  lines.push_back(line);
+  lines.push_back(line);
+  
+  // In Angle3D we intersect the epipolar plane with the image plane
+  lines.push_back(line);
+  
+
+
+
+
+
+  // Accumulate candidate points per method
+  for (unsigned int method = 0; method < num_methods_; method++) {
+    std::vector<cv::Point2d> points_method;
+    for (size_t i = 0; i < candidates_[method][kp].size(); i++) {
+      if (candidates_[method][kp][i] > 0.0) {
+        cv::Point2f pt(kpoints2[i].x, kpoints2[i].y);
+        points_method.push_back(pt);
+      }
+    }
+    points.push_back(points_method);
+  }
+
+
+
+
+
+
+  std::string name = cust_name + " " + std::to_string(kp + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
+  
+  cv::Mat im12;
+  cv::hconcat(im1, im2, im12);
+  
+  //DrawCandidates(im12, lines, kpoints1[kp], points, name);
+  
+}
+
+
+
 
 std::vector<std::vector<double>> AngMatcher::MatchEpilineDist(float th, bool bCrossVerification, 
                                                               bool bDraw) {
@@ -1412,6 +1514,14 @@ void ResizeAndDisplay(const std::string &title, const cv::Mat &img1, float facto
   } else {
     cv::imshow(title, out1);
   }
+
+  // Save image
+  std::string filename = title + ".png";
+  std::string out_path = "/home/icirauqui/workspace_phd/fisheye_matcher/images/out/" + filename;
+  std::replace(out_path.begin(), out_path.end(), ' ', '_');
+  std::replace(out_path.begin(), out_path.end(), ':', '_');
+  std::cout << out_path << std::endl;
+  cv::imwrite(out_path, out1);
 }
 
 

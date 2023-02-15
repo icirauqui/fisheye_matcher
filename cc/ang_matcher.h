@@ -88,6 +88,12 @@ cv::Vec2f LineToLineIntersection(cv::Vec3f l1, cv::Vec3f l2);
 float AngleLinePlane(cv::Vec4f pi, cv::Vec3f v);
 
 
+cv::Vec4f PlaneFromCameraPose(cv::Mat R, cv::Mat t);
+
+
+cv::Vec3f Intersect2Planes(cv::Vec4f pi1, cv::Vec4f pi2);
+
+
 float DistancePointLine(const cv::Point2f point, const cv::Vec3f &line);
 
 
@@ -98,6 +104,9 @@ cv::Point3f ptg(cv::Point3f c, cv::Point3f cg, cv::Point2f p, float f);
 
 
 void DrawCandidates(cv::Mat im1, cv::Mat im2, cv::Vec3f line, cv::Point2f point, std::vector<cv::Point2f> points, std::string name = "Candidates");
+
+
+void DrawCandidates(cv::Mat im12, std::vector<cv::Vec3f> line, cv::Point2f point, std::vector<std::vector<cv::Point2f>> points, std::string name = "Candidates");
 
 
 cv::Point3f ConvertToWorldCoords(cv::Point2f &p, cv::Mat &R, cv::Mat t, cv::Mat &K);
@@ -174,6 +183,8 @@ public:
   void ViewCandidates(std::vector<std::vector<double>> candidates, int kp, std::string cust_name = "View");
 
   void ViewMatches(std::string method, std::string cust_name = "View", float scale = 0.5);
+
+  void ViewKpResults(std::string method1, std::string method2, int kp, std::string cust_name = "View");
 
   
   
