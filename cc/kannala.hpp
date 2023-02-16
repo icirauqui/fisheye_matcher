@@ -1,3 +1,8 @@
+
+#include <opencv2/core.hpp>
+#include <opencv2/calib3d.hpp>
+nalgebra = "0.32.1"
+
 /*
 This function takes three arguments:
 
@@ -9,8 +14,6 @@ The function first converts the 2D point to a 3D point in homogeneous coordinate
 Note that this function assumes that the camera is calibrated using the Kannala-Brandt model and that the distortion coefficients are provided. If you are using a different camera model or calibration method, you may need to modify the function accordingly.
 */
 
-#include <opencv2/core.hpp>
-#include <opencv2/calib3d.hpp>
 
 cv::Mat transformPointTo3D(cv::Mat K, cv::Mat distCoeffs, cv::Point2d pt)
 {
@@ -57,8 +60,6 @@ The function first transforms the 3D point to camera coordinates using the rotat
 Note that the Kannala-Brandt model is a more complex model than the standard pinhole camera model, and it requires five distortion coefficients to be specified. The function provided here assumes that the distortion coefficients are provided in the distCoeffs argument as a 1x5 matrix. If your camera uses a different number of distortion coefficients, or a different model, you may need to modify the function accordingly.
 */
 
-#include <opencv2/core.hpp>
-#include <opencv2/calib3d.hpp>
 
 cv::Point2d projectPointTo2D(cv::Mat K, cv::Mat distCoeffs, cv::Mat R, cv::Mat t, cv::Mat pt3D)
 {

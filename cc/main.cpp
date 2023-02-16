@@ -193,7 +193,7 @@ int main() {
   double th_sift = 100.0;
 
   // Match by distance threshold
-  AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, cam.K());
+  AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, cam.K(), cam.D());
 
   //am.Match("epiline", th_epiline, th_sift, cross_check, draw_inline, draw_global);
   am.Match("sampson", th_sampson, th_sift, cross_check, draw_inline, draw_global);

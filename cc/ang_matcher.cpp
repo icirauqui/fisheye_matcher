@@ -552,6 +552,26 @@ cv::Point3f ConvertToWorldCoords(cv::Point2f &p, cv::Mat &R, cv::Mat t, cv::Mat 
 }
 
 
+
+
+cv::Point3f ConvertLocal3dToWorld3d(cv::Point2f &p, 
+                                    float f, cv::Point2f pp,
+                                    cv::Mat &R, cv::Mat t, 
+                                    cv::Mat &K, cv::Vec4f &D) {  
+
+  cv::Point3f ptl = Compute3dOverLens(cv::Point2f(p.x-pp.x, p.y-pp.y), f, K, D);
+
+  // Convert to mat
+  cv::Mat ptl_m = (cv::Mat_<float>(3, 1) << ptl.x/f, ptl.y/f, ptl.z/f);
+  ptl_m.convertTo(ptl_m, R.type());
+  cv::Mat ptg = R * ptl_m + t;
+
+  return cv::Point3f(ptg.at<float>(0), ptg.at<float>(1), ptg.at<float>(2));
+}
+
+
+
+
 cv::Point2f ConvertToImageCoords(cv::Point3f &p, cv::Mat &R, cv::Mat t, cv::Mat &K) {  
   // Point to homogeneous
   cv::Mat p_hom = (cv::Mat_<float>(4, 1) << p.x, p.y, p.z, 1);
@@ -566,6 +586,27 @@ cv::Point2f ConvertToImageCoords(cv::Point3f &p, cv::Mat &R, cv::Mat t, cv::Mat 
 
   return cv::Point2f(p_img.at<float>(0) / p_img.at<float>(2), p_img.at<float>(1) / p_img.at<float>(2));
 }
+
+
+
+cv::Point3f Compute3dOverLens(cv::Point2f p, float f, cv::Mat K, cv::Vec4f D) {
+  float r = sqrt(pow(p.x, 2) + pow(p.y, 2));
+  float theta_d = atan2(r, f);
+  float theta = theta_d / (1 + D(0)*pow(theta_d,2) + D(1)*pow(theta_d,4) + D(2)*pow(theta_d,6) + D(3)*pow(theta_d,8));
+
+
+  // Compute phi, the angle between the x-axis and the point
+  float phi = atan2(p.y, p.x);
+
+  float x = f * sin(theta) * cos(phi);
+  float y = f * sin(theta) * sin(phi);
+  float z = f * cos(theta);
+
+  return cv::Point3f(f * sin(theta) * cos(phi), f * sin(theta) * sin(phi), f * cos(theta));
+  return cv::Point3f(-x, -y, z);
+}
+
+
 
 
 cv::Point2f UndistortPointRadial(cv::Point2f &p, cv::Mat &K, cv::Mat &D) {
@@ -675,7 +716,8 @@ AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoin
                        cv::Point3f co1g_, cv::Point3f co2g_,
                        cv::Mat R1_, cv::Mat R2_,
                        cv::Mat t_,
-                       cv::Mat K_) {
+                       cv::Mat K_,
+                       cv::Vec4f D_) {
   vkps1 = vkps1_;
   vkps2 = vkps2_;
   dsc1 = dsc1_;
@@ -694,6 +736,7 @@ AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoin
   R2 = R2_;
   t = t_;
   K = K_;
+  D = D_;
 
   // Get Points from KeyPoints
   for (size_t i = 0; i < vkps1.size(); i++)
@@ -1217,6 +1260,9 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle3D(float th, bool bCrossV
 
     cv::Mat o = cv::Mat::zeros(3,1,t.type());
     cv::Point3f p1g = ConvertToWorldCoords(kpoints1[i], R1, o, K);
+    //cv::Point3f p1g2 = ConvertLocal3dToWorld3d(kpoints1[i], fo, cv::Point2f(co2.x, co2.y), R1, o, K, D);
+
+    std::cout << "p1g: " << p1g << "  p1g2: " << p1g2 << std::endl;
 
     // Epipolar line in image 2: 
     // correct would be to compute the intersection between the plane and the camera 2 plane
@@ -1606,6 +1652,7 @@ std::vector<int> AngMatcher::GetPointIndices(const std::vector<cv::DMatch> &matc
 
   return queryIdx;
 }
+
 
 
 

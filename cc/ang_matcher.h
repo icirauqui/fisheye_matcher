@@ -121,7 +121,16 @@ void DrawCandidates(cv::Mat im12,
 cv::Point3f ConvertToWorldCoords(cv::Point2f &p, cv::Mat &R, cv::Mat t, cv::Mat &K);
 
 
-cv::Point2f ConvertToImageCoords(cv::Point3f &p, cv::Mat &R, cv::Mat t, cv::Mat &K);
+cv::Point3f ConvertToWorldCoords(cv::Point2f &p, cv::Mat &R, cv::Mat t, cv::Mat &K);
+
+
+cv::Point3f ConvertLocal3dToWorld3d(cv::Point2f &p, 
+                                    float f, cv::Point2f pp,
+                                    cv::Mat &R, cv::Mat t, 
+                                    cv::Mat &K, cv::Vec4f &D);
+
+
+cv::Point3f Compute3dOverLens(cv::Point2f p, float f, cv::Mat K, cv::Vec4f D);
 
 
 cv::Point2f UndistortPointRadial(cv::Point2f &p, cv::Mat &K, cv::Mat &D);
@@ -180,7 +189,8 @@ public:
              cv::Point3f co1g_, cv::Point3f co2g_,
              cv::Mat R1_, cv::Mat R2_,
              cv::Mat t_,
-             cv::Mat K_);
+             cv::Mat K_,
+             cv::Vec4f D_);
 
   ~AngMatcher();
 
@@ -244,7 +254,6 @@ private:
 
 
 
-
   std::vector<cv::Point2f> kpoints1, kpoints2;
   std::vector<cv::KeyPoint> vkps1, vkps2;
   std::vector<cv::Vec3f> gmlines1, gmlines2;
@@ -258,6 +267,7 @@ private:
   cv::Mat R1, R2;
   cv::Mat t;
   cv::Mat K;
+  cv::Vec4f D;
 
   std::unordered_map<std::string, std::vector<cv::DMatch>> matches_1_not_2;
   std::unordered_map<std::string, std::vector<cv::DMatch>> matches_2_not_1;
