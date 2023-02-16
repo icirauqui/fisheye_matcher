@@ -113,6 +113,13 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
                     std::string name = "Candidates");
 
 
+// Draws two results together
+void DrawCandidates(cv::Mat im1, cv::Mat im2, 
+                    cv::Vec3f line, cv::Point2f point, cv::Point2f point1, cv::Point2f point2, 
+                    std::vector<cv::Point2f> points1, std::vector<cv::Point2f> points2,  
+                    std::string name = "Candidates", bool save = false);
+
+
 void DrawCandidates(cv::Mat im12, 
                     std::vector<cv::Vec3f> line, cv::Point2f point, std::vector<std::vector<cv::Point2f>> points, 
                     std::string name = "Candidates");
@@ -213,6 +220,8 @@ public:
   void ViewCandidates(std::vector<std::vector<double>> candidates, int kp, std::string cust_name = "View");
 
   void ViewCandidates(std::string method, int kp, std::string cust_name = "View");
+
+  void ViewCandidatesCompare(std::string method1, std::string method2, int kp);
 
   void ViewMatches(std::string method, std::string cust_name = "View", float scale = 0.5);
 

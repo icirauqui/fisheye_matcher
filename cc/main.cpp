@@ -219,22 +219,13 @@ int main() {
 
 
   std::cout << " 7. Compare matches for specific query keypoint" << std::endl;
-  am.ViewCandidates("sampson",  32, "sampson");
-  am.ViewCandidates("sampson", 395, "sampson");
-  am.ViewCandidates("sampson", 409, "sampson");
-  am.ViewCandidates("sampson", 430, "sampson");
-  am.ViewCandidates("sampson", 473, "sampson");
-  am.ViewCandidates("sampson", 642, "sampson");
-  am.ViewCandidates("sampson", 644, "sampson");
-  am.ViewCandidates("angle3d",  32, "angle3d");
-  am.ViewCandidates("angle3d", 395, "angle3d");
-  am.ViewCandidates("angle3d", 409, "angle3d");
-  am.ViewCandidates("angle3d", 430, "angle3d");
-  am.ViewCandidates("angle3d", 473, "angle3d");
-  am.ViewCandidates("angle3d", 642, "angle3d");
-  am.ViewCandidates("angle3d", 644, "angle3d");
-
-
+  am.ViewCandidatesCompare("sampson", "angle3d",  32);
+  am.ViewCandidatesCompare("sampson", "angle3d", 395);
+  am.ViewCandidatesCompare("sampson", "angle3d", 409);
+  am.ViewCandidatesCompare("sampson", "angle3d", 430);
+  am.ViewCandidatesCompare("sampson", "angle3d", 473);
+  am.ViewCandidatesCompare("sampson", "angle3d", 642);
+  am.ViewCandidatesCompare("sampson", "angle3d", 644);
 
 
 
