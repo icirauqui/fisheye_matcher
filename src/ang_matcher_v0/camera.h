@@ -6,7 +6,7 @@
 #include <string>
 #include <math.h>
 
-#include "../third_party/nlohmann/json.hpp"
+#include "../../third_party/nlohmann/json.hpp"
 
 #include <opencv2/opencv.hpp>
 
