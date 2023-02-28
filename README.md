@@ -33,4 +33,30 @@ We present a new implementation for the matching process applying epipolar geome
 
 By setting the threshold in the angular error, we can filter out the wrong matches.
 
-<img src=".readme/epipolar_result.png" alt="drawing" width="1200"/>
+<img src=".readme/epipolar_result.png" alt="drawing" width="1000"/>
+
+Individual points can be compared, e.g., point 605 out of 8192 keypoints extracted, results in a match when using the angle thresholding, but not when using the traditional Sampson matching. The reason being that the epipolar plane, when interesected with the lens surface, automatically accounts for the distortion of the image. This is not the case when using the traditional method, and we'd need to dramatically increase the search region to match the result.
+
+<img src=".readme/sampson_angle3d_605_6506_28_191_candidates.png" alt="drawing" width="1000"/>
+
+<img src=".readme/605.png" alt="drawing" width="1000"/>
+
+
+
+
+## Usage
+
+All code and dependencies are compiled with Bazel for easier usage. 
+
+Two binaries are available:
+
+- In-depth point wise analysis:
+
+    `bazel run //:main_ang_matcher_v0`
+
+- 3D-viewer of lenses and epipolar plane for a single point:
+
+    `bazel run //:main_fe_lens_matcher`
+
+The last one being under review, as the 3D orientation of the lenses is not displayed correctly.
+
