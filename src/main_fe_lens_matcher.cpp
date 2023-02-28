@@ -12,181 +12,30 @@
 #include "src/ang_matcher/ang_matcher.h"
 
 
-void FullLens() {
-    // Set the camera intrinsics
-  FisheyeLens lens(717.2104, 717.4816, 735.3566, 552.7982, 
-                   -0.1389272, -0.001239606, 0.0009125824, -0.00004071615);
 
-  // Define max angles for semi-sphere
-  double theta_max = 60 * M_PI / 180;  // 60 degrees
-  double phi_max = 2 * M_PI;  // 360 degrees
-  std::cout << "Theta max: " << theta_max << std::endl;
-  std::cout << "Phi max: " << phi_max << std::endl;
 
-  // Generate 3D points over the semi-sphere
-  std::vector<std::vector<double>> coords3d;
-  coords3d.push_back(std::vector<double>({0.0, 0.0}));  // Center
-  double resolution = 0.05;
-  for (double theta = resolution; theta < theta_max; theta += resolution) {
-    for (double phi = 0.0; phi < phi_max; phi += resolution) {
-      coords3d.push_back(std::vector<double>({theta, phi}));
-    }
+void SaveMatches(std::vector<cv::DMatch> matches, std::string path) {
+  std::ofstream file;
+  file.open(path);
+  for (int i = 0; i < matches.size(); i++) {
+    file << matches[i].queryIdx << " " << matches[i].trainIdx << " " << matches[i].distance << std::endl;
   }
-
-  // Project the semi-sphere onto the image plane
-  std::vector<cv::Point2f> coords2d;
-  //for (auto coord : coords3d) {
-  for (unsigned int i=0; i<coords3d.size(); i++) {
-    double theta = coords3d[i][0];
-    double phi = coords3d[i][1];
-    cv::Point2f coord = lens.Compute2D(theta, phi, true);
-    coords2d.push_back(coord);
-  }
-
-  // Project back the image points onto the semi-sphere
-  std::vector<std::vector<double>> coords3d_reconstr;
-  for (auto coord : coords2d) {
-    double x = coord.x;
-    double y = coord.y;
-    coords3d_reconstr.push_back(lens.Compute3D(x, y, true));
-    //if (it == 3)
-    //  break;
-  }
-
-  // Compute the error 
-  double error = lens.ComputeError(coords3d, coords3d_reconstr);
-  std::cout << "Global error = " << error << std::endl;
-
-
-  // - - - - Visualization - - - - - - - - - - - - - - - - - -
-
-  float scale = 1;
-  float offset = 0.75;
-
-  // Original Lens
-  std::vector<cv::Point3f> points_lens;
-  std::vector<cv::Vec3b> colors_lens;
-  for (auto coord: coords3d) {
-    double x = scale * sin(coord[0]) * cos(coord[1]);
-    double y = scale * sin(coord[0]) * sin(coord[1]);
-    double z = offset + scale * cos(coord[0]);
-    points_lens.push_back(cv::Point3f(x, y, z));
-    colors_lens.push_back(cv::Vec3b(255, 255, 255));
-  }
-  
-  // Projected image
-  std::vector<cv::Point3f> points_image;
-  std::vector<cv::Vec3b> colors_image;
-  for (auto coord: coords2d) {
-    double x = scale * coord.x;
-    double y = scale * coord.y;
-    double z = -offset;
-    points_image.push_back(cv::Point3f(x, y, z));
-    colors_image.push_back(cv::Vec3b(0, 0, 255));
-  }  
-
-  // Reconstructed lens
-  std::vector<cv::Point3f> points_lens_reconstr;
-  std::vector<cv::Vec3b> colors_lens_reconstr;
-  for (auto coord: coords3d_reconstr) {
-    double x = scale * sin(coord[0]) * cos(coord[1]);
-    double y = scale * sin(coord[0]) * sin(coord[1]);
-    double z = 2*offset + scale * cos(coord[0]);
-    points_lens_reconstr.push_back(cv::Point3f(x, y, z));
-    colors_lens_reconstr.push_back(cv::Vec3b(0, 255, 0));
-  }
-
-
-  Visualizer vis;
-  vis.AddCloud(points_lens, colors_lens);
-  vis.AddCloud(points_image, colors_image);
-  vis.AddCloud(points_lens_reconstr, colors_lens_reconstr);
-  vis.Render();
+  file.close();
 }
 
-
-
-void ImgMethod() {
-    // Set the camera intrinsics
-  FisheyeLens lens(717.2104, 717.4816, 735.3566, 552.7982, 
-                   -0.1389272, -0.001239606, 0.0009125824, -0.00004071615);
-  
-  cv::Mat im1 = imread("images/1.png", cv::IMREAD_COLOR);
-  std::vector<cv::Point2f> points;
-  std::vector<cv::Vec3b> colors_original;
-  std::vector<cv::Point3f> image3d;
-  std::cout << "Image size: " << im1.cols << "x" << im1.rows << std::endl;
-  int resolution = 1;
-  for (int x = 0; x < im1.cols; x+=resolution) {
-    for (int y = 0; y < im1.rows; y+=resolution) {
-      double xd = (x - lens.cx()) / lens.fx();
-      double yd = (y - lens.cy()) / lens.fy();
-      points.push_back(cv::Point2f(x, y));
-      colors_original.push_back(im1.at<cv::Vec3b>(y, x));
-      image3d.push_back(cv::Point3f(-xd, -yd, -lens.f()));
-    }
+std::vector<cv::DMatch> LoadMatches(std::string path) {
+  std::vector<cv::DMatch> matches;
+  std::ifstream file(path);
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    int idx1, idx2;
+    float dist;
+    if (!(iss >> idx1 >> idx2 >> dist)) { break; } // error
+    matches.push_back(cv::DMatch(idx1, idx2, dist));
   }
-
-  // Project back the image points onto the semi-sphere
-  std::vector<std::vector<double>> coords3d_reconstr;
-  //double f = 1.0; //lens.f();
-  for (auto coord : points) {
-    double x = coord.x;
-    double y = coord.y;
-    std::vector<double> coord3d = lens.Compute3D(x, y, false, 1.0);
-    coords3d_reconstr.push_back(coord3d);
-  }
-
-  // Save points to csv
-  std::ofstream myfile;
-  myfile.open("/home/icirauqui/w0rkspace/CV/fisheye_lens_cc/points.csv");
-  for (auto coord : coords3d_reconstr) {
-    myfile << coord[0] << "," << coord[1] << "," << coord[2] << std::endl;
-  }
-  myfile.close();
-
-
-
-
-  // - - - - Visualization - - - - - - - - - - - - - - - - - -
- 
-  float scale = 1;
-  float offset = 0.75;
-
-  // Projected image
-  std::vector<cv::Point3f> points_image;
-  std::vector<cv::Vec3b> colors_image;
-  for (auto coord: image3d) {
-    double x = scale * coord.x;
-    double y = scale * coord.y;
-    double z = - offset;
-    points_image.push_back(cv::Point3f(x, y, z));
-    colors_image.push_back(cv::Vec3b(50, 50, 150));
-  }  
-
-  // Reconstructed lens
-  std::vector<cv::Point3f> points_lens_reconstr;
-  for (auto coord: coords3d_reconstr) {
-    double x = scale * sin(coord[0]) * cos(coord[1]);
-    double y = scale * sin(coord[0]) * sin(coord[1]);
-    double z = offset + scale * cos(coord[0]);
-    if (z - offset < 0) {
-      x = 0.0;
-      y = 0.0;
-      z = 0.0;
-    }
-    points_lens_reconstr.push_back(cv::Point3f(x, y, z));
-  }
-
-  Visualizer vis;
-  vis.AddCloud(points_image, colors_original);
-  vis.AddCloud(points_lens_reconstr, colors_original);
-  vis.Render();
+  return matches;
 }
-
-
-
-
 
 
 
@@ -197,15 +46,15 @@ void ImgMatching() {
   // Load images  
   std::cout << " 1. Loading images" << std::endl;
   std::vector<Image> imgs;
-  imgs.push_back(Image(imread("images/1.png", cv::IMREAD_COLOR), &lens));
-  imgs.push_back(Image(imread("images/2.png", cv::IMREAD_COLOR), &lens));
+  imgs.push_back(Image(imread("images/s1_001.png", cv::IMREAD_COLOR), &lens));
+  imgs.push_back(Image(imread("images/s1_002.png", cv::IMREAD_COLOR), &lens));
 
 
 
   std::cout << " 2. Detecting features" << std::endl;
 
   // Detect features (parameters from COLMAP)
-  int max_features = 1000; //8192;
+  int max_features = 8192; //8192;
   int num_octaves = 4;
   int octave_resolution = 3;
   float peak_threshold = 0.02 / octave_resolution;  // 0.04
@@ -218,8 +67,6 @@ void ImgMatching() {
     img.contours_ = am::GetContours(img.image_, 20, 3, false);
     img.kps_ = am::KeypointsInContour(img.contours_[0], img.kps_);
     f2d->compute(img.image_, img.kps_, img.desc_);
-    //std::cout << "      Keypoints: " << img.kps_.size() 
-    //          << "      Descriptors: " << img.desc_.rows << std::endl;
   }
   
 
@@ -236,7 +83,9 @@ void ImgMatching() {
   //float min_inliner_ratio = 0.25f;  //COLMAP
   //int min_num_inliers = 15;         //COLMAP
 
-  std::vector<cv::DMatch> matches = am::MatchFLANN(imgs[0].desc_, imgs[1].desc_, 0.7f);
+  //std::vector<cv::DMatch> matches = am::MatchFLANN(imgs[0].desc_, imgs[1].desc_, 0.7f);
+  std::vector<cv::DMatch> matches = LoadMatches("/home/icirauqui/workspace_phd/fisheye_matcher/images/matches.txt");
+  
   std::cout << " 3.1. Matches: " << matches.size() << std::endl;
 
 
@@ -250,6 +99,7 @@ void ImgMatching() {
     points2.push_back(imgs[1].kps_[matches[i].trainIdx].pt);
   }
   cv::Mat F12 = cv::findFundamentalMat(points1, points2);
+  std::cout << "      F12: " << F12 << std::endl;
 
   std::cout << " 4.1 Decompose E" << std::endl;
   cv::Mat Kp = lens.K();
@@ -263,13 +113,9 @@ void ImgMatching() {
   imgs[1].R_ = R2;
   imgs[1].t_ = t;
 
-  //std::cout << " 4.2. R1" << std::endl;
-  //std::cout << R1 << std::endl;
-  //std::cout << " 4.3. R2" << std::endl;
-  //std::cout << R2 << std::endl;
-  //std::cout << " 4.4. t" << std::endl;
-  //std::cout << t << std::endl;
-
+  std::cout << " 4.2. R1: " << R1 << std::endl;
+  std::cout << " 4.3. R2: " << R2 << std::endl;
+  std::cout << " 4.4. t: " << t << std::endl;
 
   double tx = t.at<double>(0, 0);
   double ty = t.at<double>(0, 1);
@@ -277,13 +123,6 @@ void ImgMatching() {
 
   
   
-
-
-
-
-
-
-
   std::cout << " 5. Compute matches by distance and angle" << std::endl;
     
   bool cross_check = true;
@@ -291,41 +130,27 @@ void ImgMatching() {
   bool draw_global = false;
   
   //float th_epiline = 4.0;
-  float th_sampson = 8.0;
+  float th_sampson = 4.0;
   //float th_angle2d = DegToRad(1.0);
   float th_angle3d = DegToRad(2.0);
-  double th_sift = 2000.0;
+  double th_sift = 100.0;
 
   cv::Point3f c1g(0.0, 0.0, 0.0);
   cv::Point3f c2g = c1g + cv::Point3f(tx, ty, tz);
 
-  // Match by distance threshold
-  //am::AngMatcher angmatcher(&imgs[0], &imgs[1], 
-  //                          &lens, 
-  //                          F12, 
-  //                          R1, R2, t,
-  //                          c1g, c2g);
-
-
-
-
-
-
-
-
   std::cout << " 6. Compare matches" << std::endl;
 
-  // Different points: 32, 395, 409, 430, 473, 642, 644
-  int point_analysis = 473;
+  // Different points: 32, 395, 409, 430, 473, 644
+  // Points with high FE impact 605, 804, 2893, 6478
+  // Points with low FE impact 3948, 6506
 
+  int point_analysis = 605;
 
   cv::Point2f pt1 = imgs[0].kps_[point_analysis].pt;
   std::vector<double> pt1_cil_cam = lens.Compute3D(pt1.x, pt1.y, false);
   cv::Point3d pt1_cam = lens.CilToCart(pt1_cil_cam[0], pt1_cil_cam[1]);
   cv::Point3d pt1_w = imgs[0].PointGlobal(pt1_cam);
   cv::Vec4f pi1 = am::EquationPlane(pt1_w, c1g, c2g);
-
-
 
 
 
@@ -484,25 +309,25 @@ void ImgMatching() {
   // Draw match if exists
 
   if (match_angle.x > 0 && match_angle.y > 0) {
-    std::cout << "Match angle found" << std::endl;
+    std::cout << "    Match angle found" << std::endl;
     cv::circle(img2, cv::Point2f(match_angle.x, match_angle.y), 12, cv::Vec3b(255,255,255), 3);
     cv::circle(img2, cv::Point2f(match_angle.x, match_angle.y), 9, cv::Vec3b(0,255,0), -1);
   } else {
-    std::cout << "Match angle not found" << std::endl;
+    std::cout << "    Match angle not found" << std::endl;
   }
 
   if (match_sampson.x > 0 && match_sampson.y > 0) {
-    std::cout << "Match sampson found" << std::endl;
+    std::cout << "    Match sampson found" << std::endl;
     cv::circle(img2, cv::Point2f(match_sampson.x, match_sampson.y), 12, cv::Vec3b(255,255,255), 3);
     cv::circle(img2, cv::Point2f(match_sampson.x, match_sampson.y), 9, cv::Vec3b(0,0,255), -1);
   } else {
-    std::cout << "Match sampson not found" << std::endl;
+    std::cout << "    Match sampson not found" << std::endl;
   }
 
   if (match_angle.x == match_sampson.x && match_angle.y == match_sampson.y) {
-    std::cout << "Match angle and sampson are the same" << std::endl;
+    std::cout << "    Match angle and sampson are the same" << std::endl;
   } else {
-    std::cout << "Match angle and sampson are different" << std::endl;
+    std::cout << "    Match angle and sampson are different" << std::endl;
   }
 
 
@@ -545,73 +370,13 @@ void ImgMatching() {
 
 
 
-
-
-
-
   // Before visualizing, save the image pair
   cv::Mat img12;
   cv::hconcat(img1, img2, img12);
   cv::resize(img12, img12, cv::Size(), 0.5, 0.5);  
-  cv::imwrite("/home/icirauqui/w0rkspace/CV/fisheye_lens_cc/images/img12.png", img12);
-  //cv::imshow("img2", img12);
-  //cv::waitKey(0);
-
-
-
-
-
-
+  cv::imwrite("/home/icirauqui/workspace_phd/fisheye_matcher/images/img12.png", img12);
 
   vis.Render();
-
-
-
-
-/*
-
-
-  // - - - - Visualization - - - - - - - - - - - - - - - - - -
- 
-  float scale = 1;
-  cv::Vec3d offset(0, 0, 0);
-
-  std::vector<std::vector<cv::Point3f>> points_images;
-  for (unsigned int i=0; i<images.size(); i++) {
-    // Projected image
-    std::vector<cv::Point3f> points_image;
-    for (auto coord: image3d) {
-      double x = (i*tx) + (i*offset(0)) + scale * coord.x;
-      double y = (i*ty) + (i*offset(1)) + scale * coord.y;
-      double z = (i*tz) + (i*offset(2)) + 0.0;
-      points_image.push_back(cv::Point3f(x, y, z));
-    }  
-    points_images.push_back(points_image);
-  }
-
-
-
-  // Reconstructed lens
-  std::vector<cv::Point3f> points_lens_reconstr;
-  for (auto coord: images_3d[0]) {
-    double x = scale * sin(coord[0]) * cos(coord[1]);
-    double y = scale * sin(coord[0]) * sin(coord[1]);
-    double z = scale * cos(coord[0]);
-    if (z < 0) {
-      x = 0.0;
-      y = 0.0;
-      z = 0.0;
-    }
-    points_lens_reconstr.push_back(cv::Point3f(x, y, z));
-  }
-
-  Visualizer vis;
-  vis.AddCloud(points_images[0], colors_original);
-  vis.AddCloud(points_images[1], colors_original);
-  vis.AddCloud(points_lens_reconstr, colors_original);
-  vis.Render();
-
-  */
 }
 
 

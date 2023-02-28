@@ -74,7 +74,6 @@ cv::Point2f FisheyeLens::Compute2D(double theta, double phi, bool world_coord) {
   double r_d = Rd(theta);
   double x_d = r_d * cos(phi);
   double y_d = r_d * sin(phi);
-  //std::cout << "r_d: " << r_d << " " << x_d << " " << y_d << std::endl;
 
   if (world_coord) {
     return cv::Point2f(x_d, y_d);
@@ -83,52 +82,7 @@ cv::Point2f FisheyeLens::Compute2D(double theta, double phi, bool world_coord) {
     double y = fy_ * y_d + cy_;
     return cv::Point2f(x, y);
   }
-
-  //  double r_theta = RTheta(theta);
-  //  double x = r_theta * cos(phi);
-  //  double y = r_theta * sin(phi);
-  //  return cv::Point2f(x, y);
 }
-
-/*
-std::vector<double> FisheyeLens::Compute3D(double x, double y, bool sim, double x0) {
-
-  if (x > 0.99) {
-    x = 0.99;
-  } else if (x < -0.99) {
-    x = -0.99;
-  }
-
-  if (y > 0.99) {
-    y = 0.99;
-  } else if (y < -0.99) {
-    y = -0.99;
-  }
-  
-  double phi = 0.0;
-  double theta = 0.0;
-
-  if (x == 0.0 && y == 0.0) {
-    return std::vector<double>({theta, phi});
-  }
-
-  if (x == 0.0) {
-    if (y >= 0.0) {
-      phi = M_PI / 2.0;
-    } else {
-      phi = -M_PI / 2.0;
-    }
-  } else {
-    phi = atan(y / x);
-  }
-
-  double r_theta = std::abs(x / cos(phi));
-  theta = RThetaInv(r_theta, x0);
-  std::cout << "( " << x << ", " << y << " ) -> [ " << theta << ", " << phi << "] " << r_theta << std::endl;
-  return std::vector<double>({theta, phi});
-}
-*/
-
 
 
 std::vector<double> FisheyeLens::Compute3D(double x, double y, bool world_coord, double x0) {  
@@ -165,11 +119,6 @@ std::vector<double> FisheyeLens::Compute3D(double x, double y, bool world_coord,
   double r_d = sqrt(pow(x_d, 2) + pow(y_d, 2));
 
   theta = RThetaInv(r_d, x0);
-
-  //std::cout << "( " << x << ", " << y << " ) -> " 
-  //          << "( " << x_d << ", " << y_d << " ) -> " 
-  //          << "[ " << theta << ", " << phi << "] " 
-  //          << r_d << std::endl;
             
   return std::vector<double>({theta, phi});
 }
@@ -321,6 +270,14 @@ Image::Image(cv::Mat image, FisheyeLens* lens):
 cv::Point3f Image::PointGlobal(cv::Point3f pt) {
   cv::Mat p = (cv::Mat_<double>(3,1) << pt.x, pt.y, pt.z);
   cv::Mat p2 = R_ * p + t_;
+  cv::Point3f coord(p2.at<double>(0, 0), p2.at<double>(1, 0), p2.at<double>(2, 0));
+  return coord;
+}
+
+
+cv::Point3f Image::PointGlobal(cv::Point3f pt, cv::Mat R, cv::Mat t) {
+  cv::Mat p = (cv::Mat_<double>(3,1) << pt.x, pt.y, pt.z);
+  cv::Mat p2 = R * p + t;
   cv::Point3f coord(p2.at<double>(0, 0), p2.at<double>(1, 0), p2.at<double>(2, 0));
   return coord;
 }

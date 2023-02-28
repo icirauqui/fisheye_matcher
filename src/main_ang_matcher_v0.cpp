@@ -16,6 +16,32 @@
 #include "../third_party/nlohmann/json.hpp"
 #include "camera.h"
 
+#include "fe_lens/fe_lens.hpp"
+
+
+
+void SaveMatches(std::vector<cv::DMatch> matches, std::string path) {
+  std::ofstream file;
+  file.open(path);
+  for (int i = 0; i < matches.size(); i++) {
+    file << matches[i].queryIdx << " " << matches[i].trainIdx << " " << matches[i].distance << std::endl;
+  }
+  file.close();
+}
+
+std::vector<cv::DMatch> LoadMatches(std::string path) {
+  std::vector<cv::DMatch> matches;
+  std::ifstream file(path);
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    int idx1, idx2;
+    float dist;
+    if (!(iss >> idx1 >> idx2 >> dist)) { break; } // error
+    matches.push_back(cv::DMatch(idx1, idx2, dist));
+  }
+  return matches;
+}
 
 
 
@@ -46,6 +72,9 @@ using namespace am;
 
 int main() {
   std::cout << " 1. Loading data" << std::endl; 
+
+  FisheyeLens lens(717.2104, 717.4816, 735.3566, 552.7982, 
+                   -0.1389272, -0.001239606, 0.0009125824, -0.00004071615);
 
   std::cout << " 1.1. Camera parameters from cams.json" << std::endl;
   Camera cam = Camera("images/cams.json");
@@ -104,7 +133,7 @@ int main() {
   std::cout << " 2. Detecting features" << std::endl;
 
   // Detect features (parameters from COLMAP)
-  int max_features = 1000; //8192;
+  int max_features = 8192; //8192;
   int num_octaves = 4;
   int octave_resolution = 3;
   float peak_threshold = 0.02 / octave_resolution;  // 0.04
@@ -139,10 +168,6 @@ int main() {
   //int max_num_trials = 10000;       //COLMAP
   //float min_inliner_ratio = 0.25f;  //COLMAP
   //int min_num_inliers = 15;         //COLMAP
-  
-  bool cross_check = true;
-  bool draw_inline = false;
-  bool draw_global = false;
 
   std::vector<cv::DMatch> matches_knn = MatchKnn(desc1, desc2, 0.8f);
   std::vector<cv::DMatch> matches_knn_07 = MatchKnn(desc1, desc2, 0.7f);
@@ -150,13 +175,15 @@ int main() {
   std::vector<cv::DMatch> matches_flann_07 = MatchFLANN(desc1, desc2, 0.7f);
   std::vector<cv::DMatch> matches_bf = MatchBF(desc1, desc2, true);
 
-  std::cout << " 3.1. Knn   | 0.7 | 0.8 :\t" << matches_knn_07.size()   << "\t|\t" << matches_knn.size() << std::endl;
-  std::cout << " 3.2. Flann | 0.7 | 0.8 :\t" << bold_on << matches_flann_07.size() << bold_off << "\t|\t" << matches_flann.size() << std::endl;
-  std::cout << " 3.3. BF                :\t" << matches_bf.size()       << "\t|\t" << std::endl;
+  //std::cout << " 3.1. Knn   | 0.7 | 0.8 :\t" << matches_knn_07.size()   << "\t|\t" << matches_knn.size() << std::endl;
+  //std::cout << " 3.2. Flann | 0.7 | 0.8 :\t" << bold_on << matches_flann_07.size() << bold_off << "\t|\t" << matches_flann.size() << std::endl;
+  //std::cout << " 3.3. BF                :\t" << matches_bf.size()       << "\t|\t" << std::endl;
 
   // Select the matches to use (COLMAP defaults)
-  std::vector<cv::DMatch> matches = matches_flann_07;
+  std::vector<cv::DMatch> matches = MatchFLANN(desc1, desc2, 0.5f);
+  SaveMatches(matches, "/home/icirauqui/workspace_phd/fisheye_matcher/images/matches.txt");
 
+  std::cout << " 3.1. Matches: " << matches.size() << std::endl;
 
 
 
@@ -169,6 +196,7 @@ int main() {
     points2.push_back(kps2[matches[i].trainIdx].pt);
   }
   cv::Mat F12 = cv::findFundamentalMat(points1, points2);
+  std::cout << "F12 = " << F12 << std::endl;
 
   std::cout << " 4.1 Decompose E" << std::endl;
   cv::Mat Kp = cam.K();
@@ -186,21 +214,31 @@ int main() {
 
   std::cout << " 5. Compute matches by distance and angle" << std::endl;
   
-  float th_epiline = 4.0;
+  bool cross_check = true;
+  bool draw_inline = false;
+  bool draw_global = false;
+  
+  //float th_epiline = 4.0;
   float th_sampson = 4.0;
-  float th_angle2d = DegToRad(1.0);
-  float th_angle3d = DegToRad(5.0);
+  //float th_angle2d = DegToRad(1.0);
+  float th_angle3d = DegToRad(2.0);
   double th_sift = 100.0;
 
   // Match by distance threshold
-  AngMatcher am(kps1, kps2, desc1, desc2, F12, im1, im2, 2*cam.Cx(), 2*cam.Cy(), f, c1, c2, c1g, c2g, R1, R2, t, cam.K(), cam.D());
+  AngMatcher am(kps1, kps2, 
+                desc1, desc2, F12, im1, im2, 
+                2*cam.Cx(), 2*cam.Cy(), f, 
+                c1, c2, 
+                c1g, c2g, 
+                R1, R2, t, 
+                cam.K(), cam.D(), 
+                &lens);
 
   //am.Match("epiline", th_epiline, th_sift, cross_check, draw_inline, draw_global);
   am.Match("sampson", th_sampson, th_sift, cross_check, draw_inline, draw_global);
   //am.Match("angle2d", th_angle2d, th_sift, cross_check, draw_inline, draw_global);
   //am.Match("angle3d", th_angle3d, th_sift, cross_check, draw_inline, draw_global);
-  //am.Match("angle3d", DegToRad(1.0), th_sift, cross_check, draw_inline, draw_global);
-  am.Match("angle3d", DegToRad(4.0), th_sift, cross_check, draw_inline, draw_global);
+  am.Match("angle3d", th_angle3d, th_sift, cross_check, draw_inline, draw_global);
 
   //am.ViewMatches("epiline", "epiline desc matches", 0.5);
 
@@ -219,13 +257,25 @@ int main() {
 
 
   std::cout << " 7. Compare matches for specific query keypoint" << std::endl;
-  am.ViewCandidatesCompare("sampson", "angle3d",  32);
-  am.ViewCandidatesCompare("sampson", "angle3d", 395);
-  am.ViewCandidatesCompare("sampson", "angle3d", 409);
-  am.ViewCandidatesCompare("sampson", "angle3d", 430);
-  am.ViewCandidatesCompare("sampson", "angle3d", 473);
-  am.ViewCandidatesCompare("sampson", "angle3d", 642);
-  am.ViewCandidatesCompare("sampson", "angle3d", 644);
+  am.ViewCandidatesCompare("sampson", "angle3d",  260);
+  am.ViewCandidatesCompare("sampson", "angle3d", 605);
+  am.ViewCandidatesCompare("sampson", "angle3d", 804);
+  am.ViewCandidatesCompare("sampson", "angle3d", 1575);
+  am.ViewCandidatesCompare("sampson", "angle3d", 1863);
+  am.ViewCandidatesCompare("sampson", "angle3d", 2861);
+  am.ViewCandidatesCompare("sampson", "angle3d", 2893);
+  am.ViewCandidatesCompare("sampson", "angle3d",  3851);
+  am.ViewCandidatesCompare("sampson", "angle3d", 3948);
+  am.ViewCandidatesCompare("sampson", "angle3d", 4982);
+  am.ViewCandidatesCompare("sampson", "angle3d", 6478);
+  
+  //am.ViewCandidatesCompare("sampson", "angle3d",  32);
+  //am.ViewCandidatesCompare("sampson", "angle3d", 395);
+  //am.ViewCandidatesCompare("sampson", "angle3d", 409);
+  //am.ViewCandidatesCompare("sampson", "angle3d", 430);
+  //am.ViewCandidatesCompare("sampson", "angle3d", 473);
+  //am.ViewCandidatesCompare("sampson", "angle3d", 642);
+  //am.ViewCandidatesCompare("sampson", "angle3d", 644);
 
 
 

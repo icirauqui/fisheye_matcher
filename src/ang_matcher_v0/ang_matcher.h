@@ -15,10 +15,20 @@
 #include <opencv2/viz.hpp>
 
 #include "aux.h"
+#include "../fe_lens/fe_lens.hpp"
 
 
 
 namespace am {
+
+
+cv::Point3f PointGlobal(cv::Point3f pt, cv::Mat R_, cv::Mat t_);
+
+cv::Point3f PointGlobalRotation(cv::Point3f pt, cv::Mat R_);
+
+cv::Point3f PointGlobalTranslation(cv::Point3f pt, cv::Mat t_);
+
+
 
 
 cv::Mat EfromF(const cv::Mat &F, const cv::Mat &K);
@@ -190,14 +200,12 @@ public:
   AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoint> vkps2_,
              cv::Mat dsc1_, cv::Mat dsc2_,
              cv::Mat F_, cv::Mat &im1_, cv::Mat &im2_,
-             float lx_, float ly_,
-             float fo_,
+             float lx_, float ly_, float fo_,
              cv::Point3f co1_, cv::Point3f co2_,
              cv::Point3f co1g_, cv::Point3f co2g_,
-             cv::Mat R1_, cv::Mat R2_,
-             cv::Mat t_,
-             cv::Mat K_,
-             cv::Vec4f D_);
+             cv::Mat R1_, cv::Mat R2_, cv::Mat t_,
+             cv::Mat K_, cv::Vec4f D_,
+             FisheyeLens* lens_);
 
   ~AngMatcher();
 
@@ -277,6 +285,7 @@ private:
   cv::Mat t;
   cv::Mat K;
   cv::Vec4f D;
+  FisheyeLens* lens;
 
   std::unordered_map<std::string, std::vector<cv::DMatch>> matches_1_not_2;
   std::unordered_map<std::string, std::vector<cv::DMatch>> matches_2_not_1;

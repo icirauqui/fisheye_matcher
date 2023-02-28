@@ -107,6 +107,8 @@ public:
 
   cv::Point3f PointGlobal(cv::Point3f pt);
 
+  cv::Point3f PointGlobal(cv::Point3f pt, cv::Mat R, cv::Mat t);
+
   cv::Point3f PointGlobalRotation(cv::Point3f pt);
 
   cv::Point3f PointGlobalTranslation(cv::Point3f pt);

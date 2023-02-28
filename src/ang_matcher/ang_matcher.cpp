@@ -523,7 +523,7 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
   cv::Mat im12;
   cv::hconcat(im1, im2, im12);
 
-  // Draw line in image 2
+  // Draw epipolar line in image 2
   cv::Point2f pt0(0, -line[2] / line[1]);
   cv::Point2f pt1(im2.cols, -(line[2] + line[0] * im2.cols) / line[1]);
   pt0.x += im1.cols;
@@ -538,32 +538,30 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
   cv::circle(im12, point, circle_size, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
 
 
-  cv::Scalar color1 = cv::Scalar(0, 0, 150);
-  cv::Scalar color2 = cv::Scalar(255, 100, 100);
-
-
+  cv::Scalar color1 = cv::Scalar(0, 0, 200);
+  cv::Scalar color2 = cv::Scalar(255, 50, 50);
 
 
   // Draw candidates from method 1 in image 2 as circles
-
   for (size_t i = 0; i < points1.size(); i++){
     cv::Point2f pt = points1[i];
     pt.x += im1.cols;
     cv::circle(im12, pt, circle_size, color1, thickness, cv::LINE_AA);
   }
 
-  // If point1 is not null, draw it as a circle
+  // If point1 is not null, draw it as a square
   if (point1.x != 0 && point1.y != 0) {
     point1.x += im1.cols;
-    cv::line(im12, cv::Point2f(point1.x - cross_size, point1.y - cross_size), cv::Point2f(point1.x + cross_size, point1.y + cross_size), color1, thickness, cv::LINE_AA);
-    cv::line(im12, cv::Point2f(point1.x - cross_size, point1.y + cross_size), cv::Point2f(point1.x + cross_size, point1.y - cross_size), color1, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x - cross_size, point1.y + cross_size), cv::Point2f(point1.x + cross_size, point1.y + cross_size), color1, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x + cross_size, point1.y + cross_size), cv::Point2f(point1.x + cross_size, point1.y - cross_size), color1, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x + cross_size, point1.y - cross_size), cv::Point2f(point1.x - cross_size, point1.y - cross_size), color1, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x - cross_size, point1.y - cross_size), cv::Point2f(point1.x - cross_size, point1.y + cross_size), color1, thickness, cv::LINE_AA);
   }
 
 
 
 
   // Draw candidates from method 2 in image 2 as crosses
-
   for (size_t i = 0; i < points2.size(); i++){
     cv::Point2f pt = points2[i];
     pt.x += im1.cols;
@@ -571,21 +569,36 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
     cv::line(im12, cv::Point2f(pt.x - cross_size, pt.y + cross_size), cv::Point2f(pt.x + cross_size, pt.y - cross_size), color2, thickness, cv::LINE_AA);
   }
 
-  // If point2 is not null, draw it as a cross
+  // If point2 is not null, draw it as a square
   if (point2.x != 0 && point2.y != 0) {
     point2.x += im1.cols;
-    cv::circle(im12, point2, circle_size, color2, thickness, cv::LINE_AA);
+    
+    cv::line(im12, cv::Point2f(point2.x - cross_size, point2.y + cross_size), cv::Point2f(point2.x + cross_size, point2.y + cross_size), color2, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x + cross_size, point2.y + cross_size), cv::Point2f(point2.x + cross_size, point2.y - cross_size), color2, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x + cross_size, point2.y - cross_size), cv::Point2f(point2.x - cross_size, point2.y - cross_size), color2, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x - cross_size, point2.y - cross_size), cv::Point2f(point2.x - cross_size, point2.y + cross_size), color2, thickness, cv::LINE_AA);
+  
+    //cv::circle(im12, point2, circle_size, color2, thickness, cv::LINE_AA);
+  }
+
+  std::string result1 = "0";
+  std::string result2 = "0";
+  if (point1.x != 0 && point1.y != 0) {
+    result1 = "1";
+  } 
+  if (point2.x != 0 && point2.y != 0) {
+    result2 = "1";
   }
 
 
   // Substring the first 7 characters from name
-  std::string name1 = name.substr(0, 7) + " - " + std::to_string(points1.size());
-  std::string name2 = name.substr(8, 7) + " - " + std::to_string(points2.size());
+  std::string name1 = name.substr(0, 7) + " - " + std::to_string(points1.size()) + " - " + result1;
+  std::string name2 = name.substr(8, 7) + " - " + std::to_string(points2.size()) + " - " + result2;
 
 
   // Write text in the top left corner
-  cv::putText(im12, name1, cv::Point(im1.cols - 80, 20), cv::FONT_HERSHEY_SIMPLEX, 1, color1, 2, cv::LINE_AA);
-  cv::putText(im12, name2, cv::Point(im1.cols - 80, 60), cv::FONT_HERSHEY_SIMPLEX, 1, color2, 2, cv::LINE_AA);
+  cv::putText(im12, name1, cv::Point(im1.cols - 90, 20), cv::FONT_HERSHEY_SIMPLEX, 1, color1, 2, cv::LINE_AA);
+  cv::putText(im12, name2, cv::Point(im1.cols - 90, 60), cv::FONT_HERSHEY_SIMPLEX, 1, color2, 2, cv::LINE_AA);
 
 
 

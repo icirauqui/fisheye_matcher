@@ -5,6 +5,30 @@ namespace am {
 
 
 
+cv::Point3f PointGlobal(cv::Point3f pt, cv::Mat R_, cv::Mat t_) {
+  cv::Mat p = (cv::Mat_<double>(3,1) << pt.x, pt.y, pt.z);
+  cv::Mat p2 = R_ * p + t_;
+  cv::Point3f coord(p2.at<double>(0, 0), p2.at<double>(1, 0), p2.at<double>(2, 0));
+  return coord;
+}
+
+
+cv::Point3f PointGlobalRotation(cv::Point3f pt, cv::Mat R_) {
+  cv::Mat p = (cv::Mat_<double>(3,1) << pt.x, pt.y, pt.z);
+  cv::Mat p2 = R_ * p;
+  cv::Point3f coord(p2.at<double>(0, 0), p2.at<double>(1, 0), p2.at<double>(2, 0));
+  return coord;
+}
+
+
+cv::Point3f PointGlobalTranslation(cv::Point3f pt, cv::Mat t_) {
+  cv::Mat p = (cv::Mat_<double>(3,1) << pt.x, pt.y, pt.z);
+  cv::Mat p2 = p + t_;
+  cv::Point3f coord(p2.at<double>(0, 0), p2.at<double>(1, 0), p2.at<double>(2, 0));
+  return coord;
+}
+
+
 
 cv::Mat EfromF(const cv::Mat &F, const cv::Mat &K) {
   cv::Mat E = K.t() * F * K;
@@ -516,7 +540,7 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
   cv::Mat im12;
   cv::hconcat(im1, im2, im12);
 
-  // Draw line in image 2
+  // Draw epipolar line in image 2
   cv::Point2f pt0(0, -line[2] / line[1]);
   cv::Point2f pt1(im2.cols, -(line[2] + line[0] * im2.cols) / line[1]);
   pt0.x += im1.cols;
@@ -525,38 +549,44 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
 
   int thickness = 2;
   int cross_size = 8;
+  int square_out_size = 20;
+  int square_in_size = 16;
   int circle_size = 14;
 
   // Draw point in image 1
   cv::circle(im12, point, circle_size, cv::Scalar(0, 255, 0), 3, cv::LINE_AA);
 
 
-  cv::Scalar color1 = cv::Scalar(0, 0, 150);
-  cv::Scalar color2 = cv::Scalar(255, 100, 100);
-
-
+  cv::Scalar color1 = cv::Scalar(0, 0, 200);
+  cv::Scalar color2 = cv::Scalar(255, 50, 50);
+  cv::Scalar color3 = cv::Scalar(255, 255, 255);
 
 
   // Draw candidates from method 1 in image 2 as circles
-
   for (size_t i = 0; i < points1.size(); i++){
     cv::Point2f pt = points1[i];
     pt.x += im1.cols;
     cv::circle(im12, pt, circle_size, color1, thickness, cv::LINE_AA);
   }
 
-  // If point1 is not null, draw it as a circle
+  // If point1 is not null, draw it as a square
   if (point1.x != 0 && point1.y != 0) {
     point1.x += im1.cols;
-    cv::line(im12, cv::Point2f(point1.x - cross_size, point1.y - cross_size), cv::Point2f(point1.x + cross_size, point1.y + cross_size), color1, thickness, cv::LINE_AA);
-    cv::line(im12, cv::Point2f(point1.x - cross_size, point1.y + cross_size), cv::Point2f(point1.x + cross_size, point1.y - cross_size), color1, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x - square_out_size, point1.y + square_out_size), cv::Point2f(point1.x + square_out_size, point1.y + square_out_size), color3, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x + square_out_size, point1.y + square_out_size), cv::Point2f(point1.x + square_out_size, point1.y - square_out_size), color3, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x + square_out_size, point1.y - square_out_size), cv::Point2f(point1.x - square_out_size, point1.y - square_out_size), color3, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x - square_out_size, point1.y - square_out_size), cv::Point2f(point1.x - square_out_size, point1.y + square_out_size), color3, thickness, cv::LINE_AA);
+
+    cv::line(im12, cv::Point2f(point1.x - square_in_size, point1.y + square_in_size), cv::Point2f(point1.x + square_in_size, point1.y + square_in_size), color1, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x + square_in_size, point1.y + square_in_size), cv::Point2f(point1.x + square_in_size, point1.y - square_in_size), color1, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x + square_in_size, point1.y - square_in_size), cv::Point2f(point1.x - square_in_size, point1.y - square_in_size), color1, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point1.x - square_in_size, point1.y - square_in_size), cv::Point2f(point1.x - square_in_size, point1.y + square_in_size), color1, thickness, cv::LINE_AA);
   }
 
 
 
 
   // Draw candidates from method 2 in image 2 as crosses
-
   for (size_t i = 0; i < points2.size(); i++){
     cv::Point2f pt = points2[i];
     pt.x += im1.cols;
@@ -564,21 +594,41 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
     cv::line(im12, cv::Point2f(pt.x - cross_size, pt.y + cross_size), cv::Point2f(pt.x + cross_size, pt.y - cross_size), color2, thickness, cv::LINE_AA);
   }
 
-  // If point2 is not null, draw it as a cross
+  // If point2 is not null, draw it as a square
   if (point2.x != 0 && point2.y != 0) {
     point2.x += im1.cols;
-    cv::circle(im12, point2, circle_size, color2, thickness, cv::LINE_AA);
+    
+    cv::line(im12, cv::Point2f(point2.x - square_out_size, point2.y + square_out_size), cv::Point2f(point2.x + square_out_size, point2.y + square_out_size), color3, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x + square_out_size, point2.y + square_out_size), cv::Point2f(point2.x + square_out_size, point2.y - square_out_size), color3, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x + square_out_size, point2.y - square_out_size), cv::Point2f(point2.x - square_out_size, point2.y - square_out_size), color3, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x - square_out_size, point2.y - square_out_size), cv::Point2f(point2.x - square_out_size, point2.y + square_out_size), color3, thickness, cv::LINE_AA);
+
+    cv::line(im12, cv::Point2f(point2.x - square_in_size, point2.y + square_in_size), cv::Point2f(point2.x + square_in_size, point2.y + square_in_size), color2, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x + square_in_size, point2.y + square_in_size), cv::Point2f(point2.x + square_in_size, point2.y - square_in_size), color2, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x + square_in_size, point2.y - square_in_size), cv::Point2f(point2.x - square_in_size, point2.y - square_in_size), color2, thickness, cv::LINE_AA);
+    cv::line(im12, cv::Point2f(point2.x - square_in_size, point2.y - square_in_size), cv::Point2f(point2.x - square_in_size, point2.y + square_in_size), color2, thickness, cv::LINE_AA);
+  
+    //cv::circle(im12, point2, circle_size, color2, thickness, cv::LINE_AA);
+  }
+
+  std::string result1 = "0";
+  std::string result2 = "0";
+  if (point1.x != 0 && point1.y != 0) {
+    result1 = "1";
+  } 
+  if (point2.x != 0 && point2.y != 0) {
+    result2 = "1";
   }
 
 
   // Substring the first 7 characters from name
-  std::string name1 = name.substr(0, 7) + " - " + std::to_string(points1.size());
-  std::string name2 = name.substr(8, 7) + " - " + std::to_string(points2.size());
+  std::string name1 = name.substr(0, 7) + " - " + std::to_string(points1.size()) + " - " + result1;
+  std::string name2 = name.substr(8, 7) + " - " + std::to_string(points2.size()) + " - " + result2;
 
 
   // Write text in the top left corner
-  cv::putText(im12, name1, cv::Point(im1.cols - 80, 20), cv::FONT_HERSHEY_SIMPLEX, 1, color1, 2, cv::LINE_AA);
-  cv::putText(im12, name2, cv::Point(im1.cols - 80, 60), cv::FONT_HERSHEY_SIMPLEX, 1, color2, 2, cv::LINE_AA);
+  cv::putText(im12, name1, cv::Point(im1.cols - 90, 20), cv::FONT_HERSHEY_SIMPLEX, 1, color1, 2, cv::LINE_AA);
+  cv::putText(im12, name2, cv::Point(im1.cols - 90, 60), cv::FONT_HERSHEY_SIMPLEX, 1, color2, 2, cv::LINE_AA);
 
 
 
@@ -793,14 +843,12 @@ void ImgLegend::AddLegend(cv::Mat &im, std::string text, cv::Scalar color) {
 AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoint> vkps2_,
                        cv::Mat dsc1_, cv::Mat dsc2_,
                        cv::Mat F_, cv::Mat &im1_, cv::Mat &im2_,
-                       float lx_, float ly_, 
-                       float fo_,
+                       float lx_, float ly_, float fo_,
                        cv::Point3f co1_, cv::Point3f co2_,
                        cv::Point3f co1g_, cv::Point3f co2g_,
-                       cv::Mat R1_, cv::Mat R2_,
-                       cv::Mat t_,
-                       cv::Mat K_,
-                       cv::Vec4f D_) {
+                       cv::Mat R1_, cv::Mat R2_, cv::Mat t_,
+                       cv::Mat K_, cv::Vec4f D_,
+                       FisheyeLens* lens_) {
   vkps1 = vkps1_;
   vkps2 = vkps2_;
   dsc1 = dsc1_;
@@ -820,6 +868,7 @@ AngMatcher::AngMatcher(std::vector<cv::KeyPoint> vkps1_, std::vector<cv::KeyPoin
   t = t_;
   K = K_;
   D = D_;
+  lens = lens_;
 
   // Get Points from KeyPoints
   for (size_t i = 0; i < vkps1.size(); i++)
@@ -1253,7 +1302,7 @@ void AngMatcher::ViewCandidatesCompare(std::string method1, std::string method2,
     pt2b = cv::Point2f(kpoints2[kp2b].x, kpoints2[kp2b].y);
   }
 
-  std::string name = method1 + "_" + method2 + "_" + std::to_string(kp + 1) + "_" + std::to_string(vkps1.size()) + "_" + std::to_string(points1.size()) + "_" + std::to_string(points2.size()) + "_candidates";
+  std::string name = method1 + "_" + method2 + "_" + std::to_string(kp) + "_" + std::to_string(vkps1.size()) + "_" + std::to_string(points1.size()) + "_" + std::to_string(points2.size()) + "_candidates";
   DrawCandidates(im1, im2, line, kpoints1[kp], pt2a, pt2b, points1, points2, name, true);
 }
 
@@ -1384,7 +1433,32 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle3D(float th, bool bCrossV
   std::vector<std::vector<double>> candidates = std::vector<std::vector<double>>(vkps1.size(), std::vector<double>(vkps2.size(), -1.));
 
 
+  for (unsigned int i=0; i<vkps1.size(); i++) {
+    cv::Point2f pt_a = vkps1[i].pt;
+    std::vector<double> pt_a_cil_cam = lens->Compute3D(pt_a.x, pt_a.y, false);
+    cv::Point3d pt_a_cam = lens->CilToCart(pt_a_cil_cam[0], pt_a_cil_cam[1]);
+    cv::Point3d pt_a_w = PointGlobal(pt_a_cam, R1, cv::Mat::zeros(3,1,CV_64F));
+    cv::Vec4f pi_a = EquationPlane(pt_a_w, co1g, co2g);
 
+    for (unsigned int j=0; j<vkps2.size(); j++) {
+      cv::Point2f pt_b = vkps2[j].pt;
+      std::vector<double> pt_b_cil_cam = lens->Compute3D(pt_b.x, pt_b.y, false);
+      cv::Point3f pt_b_cam = lens->CilToCart(pt_b_cil_cam[0], pt_b_cil_cam[1]);
+      cv::Point3f pt_b_w = PointGlobalRotation(pt_b_cam, R2);
+
+      double angle_a = AngleLinePlane(pi_a, cv::Vec3f(pt_b_w.x, pt_b_w.y, pt_b_w.z));
+      if (angle_a < th) {
+        pt_b_w = PointGlobalTranslation(pt_b_w, t);
+        cv::Vec4f pi_b = EquationPlane(pt_b_w, co1g, co2g);
+
+        double angle_b = AngleLinePlane(pi_b, cv::Vec3f(pt_a_w.x, pt_a_w.y, pt_a_w.z));
+        if (angle_b < th) {
+          candidates[i][j] = std::abs(angle_a) + std::abs(angle_b);
+      }
+    }
+  }
+
+  /*
   for (size_t i = 0; i < vkps1.size(); i++) {
     //cv::Point3f p1g = ptg(co1, co1g, kpoints1[i], fo);
 
@@ -1422,6 +1496,7 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle3D(float th, bool bCrossV
         }
       }
     }
+    */
 
     /*
     if (bDraw) {
@@ -1457,10 +1532,10 @@ std::vector<std::vector<double>> AngMatcher::MatchAngle3D(float th, bool bCrossV
     */
 
     
-    if (points.size() > 0 && bDraw) {
-      std::string name = "Epiline " + std::to_string(i + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
-      DrawCandidates(im1, im2, line, kpoints1[i], points, name);
-    }
+    //if (points.size() > 0 && bDraw) {
+    //  std::string name = "Epiline " + std::to_string(i + 1) + " / " + std::to_string(vkps1.size()) + " - " + std::to_string(points.size()) + " candidates";
+    //  DrawCandidates(im1, im2, line, kpoints1[i], points, name);
+    //}
   }
 
   return candidates;
