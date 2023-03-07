@@ -108,10 +108,16 @@ void ImgMatching() {
 
   cv::Mat R1, R2, t;
   cv::decomposeEssentialMat(E, R1, R2, t);
-  imgs[0].R_ = R1;
+
+  //imgs[0].R_ = R1;
+  //imgs[0].t_ = cv::Mat::zeros(3, 1, CV_64F);
+  //imgs[1].R_ = R2;
+  //imgs[1].t_ = t;
+
+  imgs[0].R_ = cv::Mat::eye(3, 3, CV_64F);
   imgs[0].t_ = cv::Mat::zeros(3, 1, CV_64F);
-  imgs[1].R_ = R2;
-  imgs[1].t_ = t;
+  imgs[1].R_ = R1;
+  imgs[1].t_ = -t;
 
   std::cout << " 4.2. R1: " << R1 << std::endl;
   std::cout << " 4.3. R2: " << R2 << std::endl;
@@ -340,7 +346,7 @@ void ImgMatching() {
 
 
   for (unsigned int i=0; i<points_images.size(); i++) {
-    vis.AddCloud(points_images[i], imgs[i].colors_);
+    //vis.AddCloud(points_images[i], imgs[i].colors_);
     vis.AddCloud(points_lens[i], imgs[i].colors_);
 
     vis.AddCloud(points_candidate_th[i], cv::Vec3d(0,0,255), 1.0, 0.2);

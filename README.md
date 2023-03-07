@@ -41,6 +41,13 @@ Individual points can be compared, e.g., point 605 out of 8192 keypoints extract
 
 <img src=".readme/605.png" alt="drawing" width="1000"/>
 
+Th same result can be visualized in 3D, where we can display the 3D plane that contains both image centers, and the position of the candidate keypoint over the lens surface.
+
+
+<img src=".readme/3d_1.png" alt="drawing" width="333"/>
+<img src=".readme/3d_2.png" alt="drawing" width="333"/>
+<img src=".readme/3d_3.png" alt="drawing" width="333"/>
+
 
 
 
@@ -58,5 +65,4 @@ Two binaries are available:
 
     `bazel run //:main_fe_lens_matcher`
 
-The last one being under review, as the 3D orientation of the lenses is not displayed correctly.
 
