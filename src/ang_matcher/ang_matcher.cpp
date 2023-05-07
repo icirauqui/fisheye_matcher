@@ -1334,6 +1334,54 @@ void AngMatcher::ViewCandidatesCompare(std::string method1, std::string method2,
 }
 
 
+void AngMatcher::ViewCandidatesCompareLines(std::string method1, std::string method2, int kp) {
+  cv::Point3f pt0(0, -gmlines1[kp][2] / gmlines1[kp][1], 0.);
+  cv::Point3f pt1(lx, -(gmlines1[kp][2] + gmlines1[kp][0] * lx) / gmlines1[kp][1], 0.);
+  cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
+
+  std::vector<cv::Point2f> points1, points2;
+  for (size_t i = 0; i < candidates_[method_map_[method1]][kp].size(); i++) {
+    if (candidates_[method_map_[method1]][kp][i] > 0.0) {
+      cv::Point2f pt(kpoints2[i].x, kpoints2[i].y);
+      points1.push_back(pt);
+    }
+  }
+  for (size_t i = 0; i < candidates_[method_map_[method2]][kp].size(); i++) {
+    if (candidates_[method_map_[method2]][kp][i] > 0.0) {
+      cv::Point2f pt(kpoints2[i].x, kpoints2[i].y);
+      points2.push_back(pt);
+    }
+  }
+
+  int kp2a = -1;
+  int kp2b = -1;
+  for (size_t i = 0; i < desc_matches_[method_map_[method1]].size(); i++) {
+    if (desc_matches_[method_map_[method1]][i].queryIdx == kp) {
+      kp2a = desc_matches_[method_map_[method1]][i].trainIdx;
+      break;
+    }
+  }
+  for (size_t i = 0; i < desc_matches_[method_map_[method2]].size(); i++) {
+    if (desc_matches_[method_map_[method2]][i].queryIdx == kp) {
+      kp2b = desc_matches_[method_map_[method2]][i].trainIdx;
+      break;
+    }
+  }
+
+  cv::Point2f pt2a(0, 0);
+  cv::Point2f pt2b(0, 0);
+  if (kp2a >= 0) {
+    pt2a = cv::Point2f(kpoints2[kp2a].x, kpoints2[kp2a].y);
+  }
+  if (kp2b >= 0) {
+    pt2b = cv::Point2f(kpoints2[kp2b].x, kpoints2[kp2b].y);
+  }
+
+  std::string name = method1 + "_" + method2 + "_" + std::to_string(kp + 1) + "_" + std::to_string(vkps1.size()) + "_" + std::to_string(points1.size()) + "_" + std::to_string(points2.size()) + "_candidates";
+  DrawCandidates(im1, im2, line, kpoints1[kp], pt2a, pt2b, points1, points2, name, true);
+}
+
+
 
 void AngMatcher::ViewMatches(std::string method, std::string cust_name, float scale) {
   cv::Mat im_matches; 

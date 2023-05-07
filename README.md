@@ -65,4 +65,6 @@ Two binaries are available:
 
     `bazel run //:main_fe_lens_matcher`
 
+- Direct compare Sampson - 3D angle
 
+    `bazel run //:main_compare`

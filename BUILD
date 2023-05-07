@@ -1,6 +1,27 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 
+
+cc_binary(
+    name = "main_compare",
+    srcs = [
+        "src/main_compare.cpp",
+        ],
+    deps = [
+        "//src/fe_lens:fe_lens",
+        "//src/matcher:matcher",
+        "//src/ang_matcher:ang_matcher",
+        "@opencv//:opencv",
+    ],
+    includes = [
+      "src",
+    ],
+    data = glob(["images/**"]),
+    visibility = ["//visibility:public"],
+)
+
+
+
 cc_binary(
     name = "main_ang_matcher_v0",
     srcs = ["src/main_ang_matcher_v0.cpp"],

@@ -237,6 +237,8 @@ public:
 
   void ViewCandidatesCompare(std::string method1, std::string method2, int kp);
 
+  void ViewCandidatesCompareLines(std::string method1, std::string method2, int kp);
+
   void ViewMatches(std::string method, std::string cust_name = "View", float scale = 0.5);
 
   void ViewKpResults(std::string method1, std::string method2, int kp, std::string cust_name = "View");
