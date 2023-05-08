@@ -70,6 +70,9 @@ public:
 
   std::vector<double> CartToCil(double x, double y, double z);
 
+  cv::Point2f DistortKB(const cv::Point2f &point);
+  cv::Point2f UndistortKB(const cv::Point2f &point);
+
   inline std::vector<std::vector<double>> Lens3dReconstr() { return lens3d_reconstr_; }
 
   inline double fx() { return fx_; }

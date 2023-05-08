@@ -246,6 +246,91 @@ std::vector<double> FisheyeLens::CartToCil(double x, double y, double z) {
 }
 
 
+
+/*
+cv::Point2f FisheyeLens::DistortKB(const cv::Point2f &point) {
+  double x = (point.x - cx_) / fx_;
+  double y = (point.y - cy_) / fy_;
+  double r = std::sqrt(x * x + y * y);
+  double th = std::atan(r);
+  double th_d = th * ( 1.0 + k1_*pow(th,2) + k2_*pow(th,4) + k3_*pow(th,6) + k4_*pow(th,8));
+
+  double x_distorted = x * th_d / r;
+  double y_distorted = y * th_d / r;
+
+  return cv::Point2f(fx_ * x_distorted + cx_,
+                     fy_ * y_distorted + cy_);
+}
+
+
+
+cv::Point2f FisheyeLens::UndistortKB(const cv::Point2f &point) {
+
+
+}
+*/
+
+
+
+
+
+cv::Point2f FisheyeLens::DistortKB(const cv::Point2f& point) {
+    std::vector<double> coefficients = {k1_, k2_, k3_, k4_, k5_};
+
+    double x_normalized = (point.x - cx_) / fx_;
+    double y_normalized = (point.y - cy_) / fy_;
+
+    double r = std::sqrt(x_normalized * x_normalized + y_normalized * y_normalized);
+    double theta = std::atan2(r, 1);
+    
+    double th = theta;
+    double rho = th * ( 1.0 + k1_*pow(th,2) + k2_*pow(th,4) + k3_*pow(th,6) + k4_*pow(th,8));
+
+    //double rho = 0.0;
+    //double theta_pow = 1.0;
+    //for (size_t i = 0; i < coefficients.size(); ++i) {
+    //    theta_pow *= theta;
+    //    rho += coefficients[i] * theta_pow;
+    //}
+
+    double x_distorted_normalized = rho * x_normalized / r;
+    double y_distorted_normalized = rho * y_normalized / r;
+
+    cv::Point2f distortedPoint(fx_ * x_distorted_normalized + cx_,
+                               fy_ * y_distorted_normalized + cy_);
+
+    return distortedPoint;
+}
+
+cv::Point2f FisheyeLens::UndistortKB(const cv::Point2f& point) {
+    std::vector<double> coefficients = {k1_, k2_, k3_, k4_, k5_};
+
+    double x_normalized = (point.x - cx_) / fx_;
+    double y_normalized = (point.y - cy_) / fy_;
+
+    double r = std::sqrt(x_normalized * x_normalized + y_normalized * y_normalized);
+
+    double theta = 0.0;
+    double r_pow = 1.0;
+    for (size_t i = 0; i < coefficients.size(); ++i) {
+        r_pow *= r;
+        theta += coefficients[i] * r_pow;
+    }
+
+    double x_undistorted_normalized = theta * x_normalized / r;
+    double y_undistorted_normalized = theta * y_normalized / r;
+
+    cv::Point2f undistortedPoint(fx_ * x_undistorted_normalized + cx_,
+                                 fy_ * y_undistorted_normalized + cy_);
+
+    return undistortedPoint;
+}
+
+
+
+
+
+
 Image::Image(cv::Mat image, FisheyeLens* lens):
   image_(image), lens_(lens) {
 
