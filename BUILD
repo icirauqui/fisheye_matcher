@@ -2,10 +2,53 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 
 
+
+
+cc_binary(
+    name = "main_distort",
+    srcs = [
+        "src/main_distort.cpp",
+    ],
+    deps = [
+        "//src/ang_matcher_v0:aux",
+        "//third_party/nlohmann:json",
+        "//src/ang_matcher_v0:camera",
+        "//src/ang_matcher_v0:ang_matcher",
+        "@opencv//:opencv",
+    ],
+    includes = [
+        "src/ang_matcher_v0",
+    ],
+    data = glob(["images/**"]),
+    visibility = ["//visibility:public"],
+)
+
+
 cc_binary(
     name = "main_compare",
     srcs = [
         "src/main_compare.cpp",
+    ],
+    deps = [
+        "//src/ang_matcher_v0:aux",
+        "//third_party/nlohmann:json",
+        "//src/ang_matcher_v0:camera",
+        "//src/ang_matcher_v0:ang_matcher",
+        "@opencv//:opencv",
+    ],
+    includes = [
+        "src/ang_matcher_v0",
+    ],
+    data = glob(["images/**"]),
+    #linkstatic=True,
+    visibility = ["//visibility:public"],
+)
+
+
+cc_binary(
+    name = "main_compare2",
+    srcs = [
+        "src/main_compare2.cpp",
     ],
     deps = [
         "//src/ang_matcher_v0:aux",

@@ -645,7 +645,8 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
 void DrawCandidatesCompare(cv::Mat im1, cv::Mat im2, 
                     cv::Vec3f line, cv::Point2f point, cv::Point2f point1, cv::Point2f point2, 
                     std::vector<cv::Point2f> points1, std::vector<cv::Point2f> points2,  
-                    std::vector<cv::Point2f> region1, std::vector<cv::Point2f> region2,
+                    std::vector<cv::Point2f> region1, std::vector<cv::Point2f> region1line,
+                    std::vector<cv::Point2f> region2, std::vector<cv::Point2f> region2line,
                     std::string name, bool save) {
   //Concatenate images
   cv::Mat im12;
@@ -673,10 +674,17 @@ void DrawCandidatesCompare(cv::Mat im1, cv::Mat im2,
   cv::Scalar color3 = cv::Scalar(255, 255, 255);
 
   // Draw region 1 in image2
+  // region
   for (unsigned int i=0; i<region1.size(); i++) {
     cv::Point2f pt1 = region1[i];
     pt1.x += im1.cols;
     cv::circle(im12, pt1, 1, cv::Scalar(0, 255, 255), 1, cv::LINE_AA);
+  }
+  // region line
+  for (unsigned int i=0; i<region1line.size(); i++) {
+    cv::Point2f pt1 = region1line[i];
+    pt1.x += im1.cols;
+    cv::circle(im12, pt1, 1, cv::Scalar(0, 0, 0), 1, cv::LINE_AA);
   }
 
 
@@ -1440,11 +1448,23 @@ void AngMatcher::ViewCandidatesCompareLines(std::string method1, std::string met
   cv::Vec3f line = EquationLine(cv::Point2f(pt0.x, pt0.y), cv::Point2f(pt1.x, pt1.y));
 
   // Compute distorted line method 1 (Sampson)
-  std::vector<cv::Point2f> region1, region2;
+  std::vector<cv::Point2f> region1, region1line, region2, region2line;
   for (unsigned int i=0; i<im1.cols; i++) {
     cv::Point2f pt(i, -(gmlines1[kp][2] + gmlines1[kp][0] * i) / gmlines1[kp][1]);
-    pt = lens->DistortKB(pt);
-    region1.push_back(pt);
+
+    for (unsigned int j=0; j<im1.rows; j++) {
+      cv::Point2f pt2(i, j);
+
+      // Compute distance point line
+      float d = DistancePointLine(pt2, line);
+      if (d <= 4.0) {
+        pt2 = lens->UnDistortKB(pt2);
+        region1.push_back(pt2);
+      }
+    }
+
+    pt = lens->UnDistortKB(pt);
+    region1line.push_back(pt);
   }
 
   // Draw image optic center as a cross 
@@ -1496,7 +1516,7 @@ void AngMatcher::ViewCandidatesCompareLines(std::string method1, std::string met
   DrawCandidatesCompare(im1, im2, 
                  line, kpoints1[kp], pt2a, pt2b, 
                  points1, points2, 
-                 region1, region2,
+                 region1, region1line, region2, region2line,
                  name, true);
 }
 

@@ -348,7 +348,7 @@ int main() {
   if (points_candidates_angle_nn.size() > 0)
     vis.AddCloud(points_candidates_angle_nn, vis.green, 6.0);
   if (points_candidates_angle_desc.size() > 0)
-    vis.AddCloud(points_candidates_angle_desc, vis.pink, 6.0);
+    vis.AddCloud(points_candidates_angle_desc, vis.magenta, 6.0);
 
 
   // Point in image 1

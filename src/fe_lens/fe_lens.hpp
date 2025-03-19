@@ -70,8 +70,11 @@ public:
 
   std::vector<double> CartToCil(double x, double y, double z);
 
+  cv::Point2f DistortPoint(const cv::Point2f &point);
+  cv::Point2f UnDistortPoint(const cv::Point2f &point);
+
   cv::Point2f DistortKB(const cv::Point2f &point);
-  cv::Point2f UndistortKB(const cv::Point2f &point);
+  cv::Point2f UnDistortKB(const cv::Point2f &point);
 
   inline std::vector<std::vector<double>> Lens3dReconstr() { return lens3d_reconstr_; }
 
@@ -157,13 +160,18 @@ public:
 
   void Render();
 
+
   // Colors 
-  cv::Vec3d yellow = cv::Vec3d(0,255,255);
-  cv::Vec3d red = cv::Vec3d(255,0,0);
+  cv::Vec3d blue  = cv::Vec3d(255,0,0);
   cv::Vec3d green = cv::Vec3d(0,255,0);
-  cv::Vec3d blue = cv::Vec3d(255,0,0);
+  cv::Vec3d red   = cv::Vec3d(0,0,255);
+
+  cv::Vec3d yellow  = cv::Vec3d(0,255,255);
+  cv::Vec3d cyan    = cv::Vec3d(255,255,0);
+  cv::Vec3d magenta = cv::Vec3d(255,0,255);
+
   cv::Vec3d black = cv::Vec3d(0,0,0);
-  cv::Vec3d pink = cv::Vec3d(255,0,255);
+  cv::Vec3d white = cv::Vec3d(255,255,255);
 
 private:
 

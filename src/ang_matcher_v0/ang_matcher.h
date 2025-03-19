@@ -132,12 +132,12 @@ void DrawCandidates(cv::Mat im1, cv::Mat im2,
 
 
 // Draws two results together
-void DrawCandidatesCompare(
-                    cv::Mat im1, cv::Mat im2, 
+void DrawCandidatesCompare(cv::Mat im1, cv::Mat im2, 
                     cv::Vec3f line, cv::Point2f point, cv::Point2f point1, cv::Point2f point2, 
                     std::vector<cv::Point2f> points1, std::vector<cv::Point2f> points2,  
-                    std::vector<cv::Point2f> region1, std::vector<cv::Point2f> region2,  
-                    std::string name = "Candidates", bool save = false);
+                    std::vector<cv::Point2f> region1, std::vector<cv::Point2f> region1line,
+                    std::vector<cv::Point2f> region2, std::vector<cv::Point2f> region2line,
+                    std::string name, bool save);
 
 
 void DrawCandidates(cv::Mat im12, 

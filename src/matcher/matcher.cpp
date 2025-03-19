@@ -203,7 +203,7 @@ void Matcher::MatchSampson(FisheyeLens* lens, Image* im1, Image* im2, cv::Mat F,
 
 
 
-std::vector<cv::Point2f> Matcher::SampsonRegion(FisheyeLens* lens, Image* im1, Image* im2, cv::Mat F, int pt, double th){
+std::vector<cv::Point2f> Matcher::SampsonRegion(FisheyeLens* lens, Image* im1, Image* im2, cv::Mat F, int pt_idx, double th){
   // Draw epipolar line and search region
   std::vector<cv::Point2f> kpoints1, kpoints2;
   for (size_t i = 0; i < im1->kps_.size(); i++)
@@ -219,8 +219,8 @@ std::vector<cv::Point2f> Matcher::SampsonRegion(FisheyeLens* lens, Image* im1, I
   double ly = 2*lens->cy();
 
   // Epipolar line
-  cv::Point3f pt_l_0(0, -gmlines1[pt][2] / gmlines1[pt][1], 0.);
-  cv::Point3f pt_l_1(lx, -(gmlines1[pt][2] + gmlines1[pt][0] * lx) / gmlines1[pt][1], 0.);
+  cv::Point3f pt_l_0(0, -gmlines1[pt_idx][2] / gmlines1[pt_idx][1], 0.);
+  cv::Point3f pt_l_1(lx, -(gmlines1[pt_idx][2] + gmlines1[pt_idx][0] * lx) / gmlines1[pt_idx][1], 0.);
   cv::Vec3f line = EquationLine(cv::Point2f(pt_l_0.x, pt_l_0.y), cv::Point2f(pt_l_1.x, pt_l_1.y));
 
   std::vector<cv::Point2f> points_epipolar_th;

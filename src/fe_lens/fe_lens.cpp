@@ -246,32 +246,64 @@ std::vector<double> FisheyeLens::CartToCil(double x, double y, double z) {
 }
 
 
+cv::Point2f FisheyeLens::DistortPoint(const cv::Point2f &point) {
+  double x = point.x;
+  double y = point.y;
 
-/*
-cv::Point2f FisheyeLens::DistortKB(const cv::Point2f &point) {
-  double x = (point.x - cx_) / fx_;
-  double y = (point.y - cy_) / fy_;
-  double r = std::sqrt(x * x + y * y);
-  double th = std::atan(r);
-  double th_d = th * ( 1.0 + k1_*pow(th,2) + k2_*pow(th,4) + k3_*pow(th,6) + k4_*pow(th,8));
+  double x_normalized = (x - cx_) / fx_;
+  double y_normalized = (y - cy_) / fy_;
 
-  double x_distorted = x * th_d / r;
-  double y_distorted = y * th_d / r;
+  double r = std::sqrt(std::pow(x_normalized, 2) + std::pow(y_normalized, 2));
+  if (r == 0) {
+    return cv::Point2f(cx_, cy_);
+  }
 
-  return cv::Point2f(fx_ * x_distorted + cx_,
-                     fy_ * y_distorted + cy_);
+
+  double th = RThetaInv(r, 0.1);
+  double th_d = th * (1 + 
+                      k1_ * std::pow(th, 2) + 
+                      k2_ * std::pow(th, 4) + 
+                      k3_ * std::pow(th, 6) + 
+                      k4_ * std::pow(th, 8));
+  r = RTheta(th);
+  double r_d = RTheta(th_d);
+  std::cout << "r: " << r << " " << r_d << std::endl;
+
+  //double x_d = x_normalized * th_d / r;
+  //double y_d = y_normalized * th_d / r;
+
+  double x_d = x_normalized * std::abs(r_d / r);
+  double y_d = y_normalized * std::abs(r_d / r);
+  double u = x_d * fx_ + cx_;
+  double v = y_d * fy_ + cy_;
+
+  return cv::Point2f(u, v);
 }
 
 
+cv::Point2f FisheyeLens::UnDistortPoint(const cv::Point2f &point) {
+  double x = point.x;
+  double y = point.y;
 
-cv::Point2f FisheyeLens::UndistortKB(const cv::Point2f &point) {
+  double x_normalized = (x - cx_) / fx_;
+  double y_normalized = (y - cy_) / fy_;
 
+  double r = std::sqrt(std::pow(x_normalized, 2) + std::pow(y_normalized, 2));
 
+  double th_d = std::atan(r);
+  double th = th_d / (1 + 
+                      k1_ * std::pow(th_d, 2) + 
+                      k2_ * std::pow(th_d, 4) + 
+                      k3_ * std::pow(th_d, 6) + 
+                      k4_ * std::pow(th_d, 8));
+
+  double x_d = x_normalized * th / r;
+  double y_d = y_normalized * th / r;
+  double u = x_d * fx_ + cx_;
+  double v = y_d * fy_ + cy_;
+
+  return cv::Point2f(u, v);
 }
-*/
-
-
-
 
 
 cv::Point2f FisheyeLens::DistortKB(const cv::Point2f& point) {
@@ -302,7 +334,7 @@ cv::Point2f FisheyeLens::DistortKB(const cv::Point2f& point) {
     return distortedPoint;
 }
 
-cv::Point2f FisheyeLens::UndistortKB(const cv::Point2f& point) {
+cv::Point2f FisheyeLens::UnDistortKB(const cv::Point2f& point) {
     std::vector<double> coefficients = {k1_, k2_, k3_, k4_, k5_};
 
     double x_normalized = (point.x - cx_) / fx_;

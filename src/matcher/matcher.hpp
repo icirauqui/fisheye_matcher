@@ -43,7 +43,7 @@ public:
 
   void MatchSampson(FisheyeLens* lens, Image* im1, Image* im2, cv::Mat F, double th);
 
-  std::vector<cv::Point2f> SampsonRegion(FisheyeLens* lens, Image* im1, Image* im2, cv::Mat F, int pt, double th);
+  std::vector<cv::Point2f> SampsonRegion(FisheyeLens* lens, Image* im1, Image* im2, cv::Mat F, int pt_idx, double th);
 
   std::vector<cv::DMatch> NNMatches(double th);
 

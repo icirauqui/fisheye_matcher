@@ -168,6 +168,7 @@ void ImgMatching() {
   float th_intersect = 0.005;
 
   std::vector<std::vector<cv::Point3f>> points_images;
+  std::vector<std::vector<cv::Point3f>> points_images_threshold;
   for (unsigned int i=0; i<imgs.size(); i++) {
     // Projected image
     std::vector<cv::Point3f> points_image;
@@ -212,7 +213,9 @@ void ImgMatching() {
       }
 
       // Check if point is under angle threshold
-      cv::Point3f coord_th = coord - cv::Point3f(tx, ty, tz);
+      cv::Point3f coord_th = coord - cv::Point3f(imgs[i].t_.at<double>(0, 0), 
+                                                 imgs[i].t_.at<double>(0, 1), 
+                                                 imgs[i].t_.at<double>(0, 2));
       double angle = am::AngleLinePlane(pi1, coord_th);
       if (angle < th_angle3d) {
         points_candidate_th_i.push_back(coord);
@@ -237,15 +240,15 @@ void ImgMatching() {
 
   Matcher matcher_angle;
   matcher_angle.MatchAngle(&lens, &imgs[0], &imgs[1], th_angle3d);
-  std::vector<cv::Point3f> points_candidates_angle = matcher_angle.candidates_crosscheck_[point_analysis];
-  std::vector<cv::DMatch> candidates_angle_nn = matcher_angle.NNMatches(th_sift);
-  std::vector<cv::DMatch> candidates_angle_desc = matcher_angle.DescMatches(&imgs[0], &imgs[1], th_sift);
 
-  std::vector<cv::Point3f> points_candidates_angle_nn = 
-    matcher_angle.Match3D(&imgs[1], &lens, candidates_angle_nn, point_analysis);
+  std::vector<cv::Point3f> points_candidates_angle = matcher_angle.candidates_crosscheck_[point_analysis];
   
-  std::vector<cv::Point3f> points_candidates_angle_desc =
-    matcher_angle.Match3D(&imgs[1], &lens, candidates_angle_desc, point_analysis);
+  std::vector<cv::DMatch> candidates_angle_nn = matcher_angle.NNMatches(th_sift);
+  std::vector<cv::Point3f> points_candidates_angle_nn = matcher_angle.Match3D(&imgs[1], &lens, candidates_angle_nn, point_analysis);
+  
+  std::vector<cv::DMatch> candidates_angle_desc = matcher_angle.DescMatches(&imgs[0], &imgs[1], th_sift);
+  std::vector<cv::Point3f> points_candidates_angle_desc = matcher_angle.Match3D(&imgs[1], &lens, candidates_angle_desc, point_analysis);
+
 
   cv::Point2f match_angle = matcher_angle.Match2D(&imgs[1], &lens, candidates_angle_desc, point_analysis);
 
@@ -257,8 +260,7 @@ void ImgMatching() {
   std::vector<cv::DMatch> candidates_sampson_nn = matcher_sampson.NNMatches(th_sift);
   std::vector<cv::DMatch> candidates_sampson_desc = matcher_sampson.DescMatches(&imgs[0], &imgs[1], th_sift);
 
-  std::vector<cv::Point3f> points_candidates_sampson_desc =
-    matcher_angle.Match3D(&imgs[1], &lens, candidates_sampson_desc, point_analysis);
+  std::vector<cv::Point3f> points_candidates_sampson_desc = matcher_angle.Match3D(&imgs[1], &lens, candidates_sampson_desc, point_analysis);
 
   cv::Point2f match_sampson = matcher_sampson.Match2D(&imgs[1], &lens, candidates_sampson_desc, point_analysis);
 
@@ -276,17 +278,48 @@ void ImgMatching() {
 
   // Draw intersection of epipolar plane with lens in image 2
   for (auto pt: points_candidate_th_pi_intersect[1]) {
-    img2.at<cv::Vec3b>(pt.y, pt.x) = img2.at<cv::Vec3b>(pt.y, pt.x) * (1-opacity) + cv::Vec3b(0,255,0) * opacity;
+    img2.at<cv::Vec3b>(pt.y, pt.x) = img2.at<cv::Vec3b>(pt.y, pt.x) * (1-opacity) + cv::Vec3b(vis.black) * opacity;
   }
 
 
 
   // Draw epipolar line and search region
   std::vector<cv::Point2f> points_epipolar_th = matcher_sampson.SampsonRegion(&lens, &imgs[0], &imgs[1], F12, point_analysis, th_sampson);
+
+  // Distort points_epipolar_th with lens distortion
+  std::vector<cv::Point2f> points_epipolar_th_distorted, points_epipolar_th_distorted2;
+  for (auto pt: points_epipolar_th) {
+    std::cout << " a " << std::endl;
+    cv::Point2f pt_distorted = lens.UnDistortPoint(pt);
+    cv::Point2f pt_distorted2 = lens.DistortPoint(pt);
+    points_epipolar_th_distorted.push_back(pt_distorted);
+    points_epipolar_th_distorted2.push_back(pt_distorted2);
+  }
+
+  std::cout << " b " << std::endl;
+
   for (auto pt: points_epipolar_th) {
     img2.at<cv::Vec3b>(pt.y, pt.x) = img2.at<cv::Vec3b>(pt.y, pt.x) * (1-opacity) + cv::Vec3b(0,0,255) * opacity;
   }
 
+  std::cout << " c " << std::endl;
+
+  for (auto pt: points_epipolar_th_distorted) {
+    img2.at<cv::Vec3b>(pt.y, pt.x) = img2.at<cv::Vec3b>(pt.y, pt.x) * (1-opacity) + cv::Vec3b(0,255,0) * opacity;
+  }
+
+  std::cout << " d " << std::endl;
+
+  for (auto pt: points_epipolar_th_distorted2) {
+    std::cout << " pt " << pt << std::endl;
+    // Check if pt.x or pt.y == nan
+    if (pt.x != pt.x || pt.y != pt.y) {
+      continue;
+    }
+    img2.at<cv::Vec3b>(pt.y, pt.x) = img2.at<cv::Vec3b>(pt.y, pt.x) * (1-opacity) + cv::Vec3b(255,0,0) * opacity;
+  }
+
+  std::cout << " e " << std::endl;
 
 
 
@@ -338,6 +371,11 @@ void ImgMatching() {
 
 
 
+  // Before visualizing, save the image pair
+  cv::Mat img12;
+  cv::hconcat(img1, img2, img12);
+  cv::resize(img12, img12, cv::Size(), 0.5, 0.5);  
+  cv::imwrite("/home/icirauqui/workspace_phd/fisheye_matcher/images/img12.png", img12);
 
 
 
@@ -345,12 +383,12 @@ void ImgMatching() {
 
 
 
+  // 3D Visualization
   for (unsigned int i=0; i<points_images.size(); i++) {
-    //vis.AddCloud(points_images[i], imgs[i].colors_);
+    vis.AddCloud(points_images[i], imgs[i].colors_);
     vis.AddCloud(points_lens[i], imgs[i].colors_);
-
-    vis.AddCloud(points_candidate_th[i], cv::Vec3d(0,0,255), 1.0, 0.2);
-    vis.AddCloud(points_lens_pi_intersect[i], cv::Vec3d(0,0,0), 1.0, 1.0);
+    vis.AddCloud(points_candidate_th[i], vis.red, 1.0, 0.2);
+    vis.AddCloud(points_lens_pi_intersect[i], vis.black, 1.0, 1.0);
   }
 
   std::cout << "Candidates angle all/nn/desc: " 
@@ -360,27 +398,15 @@ void ImgMatching() {
 
   if (points_candidates_angle.size() > 0)
     vis.AddCloud(points_candidates_angle, vis.yellow, 3.0);
-  if (points_candidates_angle_nn.size() > 0)
-    vis.AddCloud(points_candidates_angle_nn, vis.green, 6.0);
-  if (points_candidates_angle_desc.size() > 0)
-    vis.AddCloud(points_candidates_angle_desc, vis.pink, 6.0);
-
+  //if (points_candidates_angle_nn.size() > 0)
+  //  vis.AddCloud(points_candidates_angle_nn, vis.green, 6.0);
+  //if (points_candidates_angle_desc.size() > 0)
+  //  vis.AddCloud(points_candidates_angle_desc, vis.magenta, 6.0);
 
   // Point in image 1
   std::vector<cv::Point3f> point_im_1 = {pt1_w};
   vis.AddCloud(point_im_1, vis.green, 6.0);
-
   vis.AddPlane(pt1_w, c1g, c2g, 5);
-
-
-
-
-
-  // Before visualizing, save the image pair
-  cv::Mat img12;
-  cv::hconcat(img1, img2, img12);
-  cv::resize(img12, img12, cv::Size(), 0.5, 0.5);  
-  cv::imwrite("/home/icirauqui/workspace_phd/fisheye_matcher/images/img12.png", img12);
 
   vis.Render();
 }
